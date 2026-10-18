@@ -30,7 +30,7 @@ class StoreUserRequest extends FormRequest
         return [
             'name' => ['required', 'string', 'max:255'],
             'username' => ['required', 'regex:/^[a-z0-9._-]{3,50}$/', Rule::unique('users', 'username')],
-            'email' => ['nullable', 'email:rfc', 'max:255', Rule::unique('users', 'email')],
+            'email' => ['required', 'email:rfc', 'max:255', Rule::unique('users', 'email')],
             'role' => ['required', Rule::enum(Role::class)],
         ];
     }

@@ -27,7 +27,7 @@ export default function UsersCreate({ roles }: Props) {
                     {({ processing, errors }) => (
                         <>
                             <div className="grid gap-2">
-                                <Label htmlFor="name">Full name</Label>
+                                <Label htmlFor="name">Display Name</Label>
                                 <Input id="name" name="name" required autoFocus autoComplete="off" />
                                 <InputError message={errors.name} />
                             </div>
@@ -49,8 +49,8 @@ export default function UsersCreate({ roles }: Props) {
                             </div>
 
                             <div className="grid gap-2">
-                                <Label htmlFor="email">Email (optional)</Label>
-                                <Input id="email" name="email" type="email" autoComplete="off" />
+                                <Label htmlFor="email">Email</Label>
+                                <Input id="email" name="email" type="email" autoComplete="off" required />
                                 <InputError message={errors.email} />
                             </div>
 

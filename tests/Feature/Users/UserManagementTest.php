@@ -69,14 +69,14 @@ it('creates a user with a forced password change and records it without the pass
         ->and(json_encode($log->details))->not->toContain('password');
 });
 
-it('allows a user without an email address', function () {
+it('requires an email address because every login needs a code', function () {
     $admin = User::factory()->admin()->create();
 
     $this->actingAs($admin)->post('/users', [
         'name' => 'No Email', 'username' => 'noemail1', 'email' => '', 'role' => 'instructor',
-    ])->assertRedirect('/users');
+    ])->assertSessionHasErrors('email');
 
-    expect(User::where('username', 'noemail1')->first()->email)->toBeNull();
+    expect(User::where('username', 'noemail1')->exists())->toBeFalse();
 });
 
 it('rejects duplicate usernames regardless of case, and bad input', function () {

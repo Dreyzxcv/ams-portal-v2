@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Settings\PasswordUpdateRequest;
 use App\Http\Requests\Settings\TwoFactorAuthenticationRequest;
 use App\Services\AuditLogger;
+use App\Services\TrustedDeviceService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Validation\Rules\Password;
 use Inertia\Inertia;
@@ -28,7 +29,7 @@ class SecurityController extends Controller
     /**
      * Update the user's password.
      */
-    public function update(PasswordUpdateRequest $request, AuditLogger $audit): RedirectResponse
+    public function update(PasswordUpdateRequest $request, AuditLogger $audit, TrustedDeviceService $devices): RedirectResponse
     {
         $user = $request->user();
 
@@ -36,6 +37,8 @@ class SecurityController extends Controller
             'password' => $request->password,
             'force_password_change' => false,
         ])->save();
+
+        $devices->revokeAll($user);
 
         $audit->record('auth.password_changed', $user, 'user', $user->id);
 
