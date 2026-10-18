@@ -3,8 +3,14 @@
 namespace App\Providers;
 
 use App\Actions\Fortify\ResetUserPassword;
+use App\Models\User;
+use App\Services\AuditLogger;
+use Illuminate\Auth\Events\Login;
+use Illuminate\Auth\Events\Logout;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Event;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Str;
@@ -29,6 +35,8 @@ class FortifyServiceProvider extends ServiceProvider
     public function boot(): void
     {
         $this->configureActions();
+        $this->configureAuthentication();
+        $this->configureAuthEvents();
         $this->configureViews();
         $this->configureRateLimiting();
     }
@@ -39,6 +47,71 @@ class FortifyServiceProvider extends ServiceProvider
     private function configureActions(): void
     {
         Fortify::resetUserPasswordsUsing(ResetUserPassword::class);
+    }
+
+    /**
+     * Username + password login. Every failure returns null, which Fortify turns into the
+     * same generic "credentials do not match" error, so the response never reveals whether
+     * a username exists or why a login was refused.
+     */
+    private function configureAuthentication(): void
+    {
+        Fortify::authenticateUsing(function (Request $request) {
+            $username = mb_strtolower(trim((string) $request->input(Fortify::username())));
+            $password = (string) $request->input('password');
+            $audit = app(AuditLogger::class);
+
+            $user = $username === ''
+                ? null
+                : User::query()->whereRaw('lower(username) = ?', [$username])->first();
+
+            if ($user === null) {
+                // One hash operation either way, so timing does not reveal unknown usernames.
+                Hash::check($password, Hash::make(Str::random(40)));
+
+                $audit->record('auth.login_failed', details: [
+                    'reason' => 'unknown_user',
+                    'username' => preg_match('/^[a-z0-9._-]{3,50}$/', $username) ? $username : '[invalid]',
+                ]);
+
+                return null;
+            }
+
+            if (! Hash::check($password, $user->password)) {
+                $audit->record('auth.login_failed', null, 'user', $user->id, ['reason' => 'bad_password']);
+
+                return null;
+            }
+
+            if (! $user->isActive()) {
+                $audit->record('auth.login_blocked', null, 'user', $user->id, [
+                    'reason' => 'status_'.($user->status?->value ?? 'unknown'),
+                ]);
+
+                return null;
+            }
+
+            return $user;
+        });
+    }
+
+    /**
+     * Record successful logins and logouts.
+     */
+    private function configureAuthEvents(): void
+    {
+        Event::listen(Login::class, function (Login $event) {
+            if ($event->user instanceof User) {
+                $event->user->forceFill(['last_login_at' => now()])->saveQuietly();
+                app(AuditLogger::class)->record('auth.login', $event->user, 'user', $event->user->id);
+            }
+        });
+
+        Event::listen(Logout::class, function (Logout $event) {
+            if ($event->user instanceof User) {
+                app(AuditLogger::class)->record('auth.logout', $event->user, 'user', $event->user->id);
+            }
+        });
     }
 
     /**
@@ -69,12 +142,16 @@ class FortifyServiceProvider extends ServiceProvider
      */
     private function configureRateLimiting(): void
     {
-
         RateLimiter::for('login', function (Request $request) {
-            $throttleKey = Str::transliterate(Str::lower($request->input(Fortify::username())).'|'.$request->ip());
+            $username = Str::transliterate(Str::lower((string) $request->input(Fortify::username())));
 
-            return Limit::perMinute(5)->by($throttleKey);
+            return [
+                // Slows guessing against one account from one address.
+                Limit::perMinute(5)->by($username.'|'.$request->ip()),
+                // Slows spraying many usernames from one address, without letting a stranger
+                // lock a specific victim out (no per-username-only limit).
+                Limit::perMinute(30)->by('login-ip|'.$request->ip()),
+            ];
         });
-
     }
 }

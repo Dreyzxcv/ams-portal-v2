@@ -11,12 +11,13 @@ class ProfileUpdateRequest extends FormRequest
     use ProfileValidationRules;
 
     /**
-     * Get the validation rules that apply to the request.
+     * Only the display name is accepted. Any other submitted field is ignored,
+     * because validated() returns only the fields listed here.
      *
      * @return array<string, ValidationRule|array<mixed>|string>
      */
     public function rules(): array
     {
-        return $this->profileRules($this->user()->id);
+        return ['name' => $this->nameRules()];
     }
 }

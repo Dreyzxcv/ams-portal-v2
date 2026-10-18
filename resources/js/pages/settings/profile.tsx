@@ -1,6 +1,5 @@
 import { Form, Head, usePage } from '@inertiajs/react';
 import ProfileController from '@/actions/App/Http/Controllers/Settings/ProfileController';
-import DeleteUser from '@/components/delete-user';
 import Heading from '@/components/heading';
 import InputError from '@/components/input-error';
 import { Button } from '@/components/ui/button';
@@ -26,7 +25,7 @@ export default function Profile() {
                 <Heading
                     variant="small"
                     title="Profile"
-                    description="Update your name and email address"
+                    description="Update your display name"
                 />
 
                 <Form
@@ -64,17 +63,15 @@ export default function Profile() {
                                     id="email"
                                     type="email"
                                     className="mt-1 block w-full"
-                                    defaultValue={auth.user.email}
-                                    name="email"
-                                    required
-                                    autoComplete="username"
-                                    placeholder="Email address"
+                                    value={auth.user.email ?? ''}
+                                    disabled
+                                    readOnly
                                 />
 
-                                <InputError
-                                    className="mt-2"
-                                    message={errors.email}
-                                />
+                                <p className="text-sm text-muted-foreground">
+                                    Contact an administrator to change your
+                                    email address.
+                                </p>
                             </div>
 
                             <div className="flex items-center gap-4">
@@ -89,8 +86,6 @@ export default function Profile() {
                     )}
                 </Form>
             </div>
-
-            <DeleteUser />
         </>
     );
 }

@@ -1,7 +1,6 @@
 <?php
 
 use App\Models\User;
-use Illuminate\Support\Facades\RateLimiter;
 use Laravel\Fortify\Features;
 
 test('login screen can be rendered', function () {
@@ -14,7 +13,7 @@ test('users can authenticate using the login screen', function () {
     $user = User::factory()->create();
 
     $response = $this->post(route('login.store'), [
-        'email' => $user->email,
+        'username' => $user->username,
         'password' => 'password',
     ]);
 
@@ -33,7 +32,7 @@ test('users with two factor enabled are redirected to two factor challenge', fun
     $user = User::factory()->withTwoFactor()->create();
 
     $response = $this->post(route('login'), [
-        'email' => $user->email,
+        'username' => $user->username,
         'password' => 'password',
     ]);
 
@@ -46,7 +45,7 @@ test('users can not authenticate with invalid password', function () {
     $user = User::factory()->create();
 
     $this->post(route('login.store'), [
-        'email' => $user->email,
+        'username' => $user->username,
         'password' => 'wrong-password',
     ]);
 
@@ -66,12 +65,24 @@ test('users can logout', function () {
 test('users are rate limited', function () {
     $user = User::factory()->create();
 
-    RateLimiter::increment(md5('login'.implode('|', [$user->email, '127.0.0.1'])), amount: 5);
+    foreach (range(1, 5) as $attempt) {
+        $this->post('/login', ['username' => $user->username, 'password' => 'wrong-password'])
+            ->assertSessionHasErrors('username');
+    }
 
-    $response = $this->post(route('login.store'), [
-        'email' => $user->email,
-        'password' => 'wrong-password',
-    ]);
+    $this->post('/login', ['username' => $user->username, 'password' => 'wrong-password'])
+        ->assertTooManyRequests();
+});
 
-    $response->assertTooManyRequests();
+test('a stranger hammering a username cannot lock the real user out from another address', function () {
+    $user = User::factory()->create();
+
+    foreach (range(1, 6) as $attempt) {
+        $this->post('/login', ['username' => $user->username, 'password' => 'wrong-password']);
+    }
+
+    $this->withServerVariables(['REMOTE_ADDR' => '10.20.30.40'])
+        ->post('/login', ['username' => $user->username, 'password' => 'password']);
+
+    $this->assertAuthenticatedAs($user);
 });

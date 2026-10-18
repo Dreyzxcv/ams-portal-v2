@@ -1,85 +1,71 @@
 <?php
 
+use App\Enums\Role;
+use App\Enums\UserStatus;
+use App\Models\AuditLog;
 use App\Models\User;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+
+uses(RefreshDatabase::class);
 
 test('profile page is displayed', function () {
     $user = User::factory()->create();
 
-    $response = $this
-        ->actingAs($user)
-        ->get(route('profile.edit'));
-
-    $response->assertOk();
+    $this->actingAs($user)->get(route('profile.edit'))->assertOk();
 });
 
-test('profile information can be updated', function () {
+test('display name can be updated', function () {
     $user = User::factory()->create();
 
-    $response = $this
-        ->actingAs($user)
-        ->patch(route('profile.update'), [
-            'name' => 'Test User',
-            'email' => 'test@example.com',
-        ]);
-
-    $response
+    $this->actingAs($user)
+        ->patch(route('profile.update'), ['name' => 'Test User'])
         ->assertSessionHasNoErrors()
         ->assertRedirect(route('profile.edit'));
+
+    expect($user->refresh()->name)->toBe('Test User');
+});
+
+test('email, username, role and status cannot be changed from the profile page', function () {
+    $user = User::factory()->create([
+        'username' => 'original_user',
+        'email' => 'original@example.test',
+    ]);
+
+    $this->actingAs($user)->patch(route('profile.update'), [
+        'name' => 'Renamed',
+        'email' => 'attacker@example.test',
+        'username' => 'attacker',
+        'role' => 'admin',
+        'status' => 'suspended',
+    ]);
 
     $user->refresh();
 
-    expect($user->name)->toBe('Test User');
-    expect($user->email)->toBe('test@example.com');
-    expect($user->email_verified_at)->toBeNull();
+    expect($user->name)->toBe('Renamed')
+        ->and($user->email)->toBe('original@example.test')
+        ->and($user->username)->toBe('original_user')
+        ->and($user->role)->toBe(Role::Trainee)
+        ->and($user->status)->toBe(UserStatus::Active);
 });
 
-test('email verification status is unchanged when the email address is unchanged', function () {
+test('a profile change is recorded in the audit log', function () {
     $user = User::factory()->create();
 
-    $response = $this
-        ->actingAs($user)
-        ->patch(route('profile.update'), [
-            'name' => 'Test User',
-            'email' => $user->email,
-        ]);
+    $this->actingAs($user)->patch(route('profile.update'), ['name' => 'New Name']);
 
-    $response
-        ->assertSessionHasNoErrors()
-        ->assertRedirect(route('profile.edit'));
+    $log = AuditLog::where('action', 'profile.updated')->first();
 
-    expect($user->refresh()->email_verified_at)->not->toBeNull();
+    expect($log)->not->toBeNull()
+        ->and($log->actor_id)->toBe($user->id);
 });
 
-test('user can delete their account', function () {
+test('users cannot delete their own account', function () {
     $user = User::factory()->create();
 
-    $response = $this
-        ->actingAs($user)
-        ->delete(route('profile.destroy'), [
-            'password' => 'password',
-        ]);
+    $this->actingAs($user)
+        ->delete('/settings/profile', ['password' => 'password'])
+        ->assertStatus(405);
 
-    $response
-        ->assertSessionHasNoErrors()
-        ->assertRedirect(route('home'));
-
-    $this->assertGuest();
-    expect($user->fresh()->trashed())->toBeTrue();
-});
-
-test('correct password must be provided to delete account', function () {
-    $user = User::factory()->create();
-
-    $response = $this
-        ->actingAs($user)
-        ->from(route('profile.edit'))
-        ->delete(route('profile.destroy'), [
-            'password' => 'wrong-password',
-        ]);
-
-    $response
-        ->assertSessionHasErrors('password')
-        ->assertRedirect(route('profile.edit'));
-
-    expect($user->fresh())->not->toBeNull();
+    expect($user->fresh())->not->toBeNull()
+        ->and($user->fresh()->trashed())->toBeFalse();
 });
