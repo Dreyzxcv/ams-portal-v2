@@ -24,4 +24,9 @@ class TraineeProgress extends Model
     {
         return $this->belongsTo(User::class, 'trainee_id');
     }
+
+    public function updater(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'updated_by');
+    }
 }

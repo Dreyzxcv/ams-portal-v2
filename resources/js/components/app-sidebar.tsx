@@ -1,5 +1,5 @@
 import { Link } from '@inertiajs/react';
-import { GraduationCap, Layers, LayoutGrid, Users } from 'lucide-react';
+import { GraduationCap, ShieldAlert, TrendingUp, Layers, LayoutGrid, Users } from 'lucide-react';
 import AppLogo from '@/components/app-logo';
 import { NavMain } from '@/components/nav-main';
 import { NavUser } from '@/components/nav-user';
@@ -18,6 +18,8 @@ import { index as usersIndex } from '@/routes/users';
 import type { NavItem } from '@/types';
 import { index as batchesIndex } from '@/routes/batches';
 import { index as gradesIndex } from '@/routes/grades';
+import { index as violationsIndex } from '@/routes/violations';
+import { index as progressIndex } from '@/routes/progress';
 
 type PermittedNavItem = NavItem & {
     /** Item is shown only to users holding this permission. Omit for items everyone sees. */
@@ -46,6 +48,17 @@ const mainNavItems: PermittedNavItem[] = [
         title: 'Grades',
         href: gradesIndex(),
         icon: GraduationCap,
+    },
+    {
+        title: 'Violations',
+        href: violationsIndex(),
+        icon: ShieldAlert,
+    },
+    { 
+        title: 'Progress', 
+        href: progressIndex(), 
+        icon: TrendingUp, 
+        permission: 'progress.manage' 
     },
 ];
 

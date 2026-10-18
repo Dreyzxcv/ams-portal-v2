@@ -11,4 +11,10 @@ return [
         'trusted_device_days' => 30,
         'max_trusted_devices' => 10,
     ],
+    'progress' => [
+        // Phases a trainee can be in (matches the grade components: 1, 2, 3, 4). Confirm with the organization.
+        'max_phase' => 4,
+        // Total program length in days. Remaining days are computed from this; null = not configured.
+        'program_days' => env('AMS_PROGRAM_DAYS') !== null ? (int) env('AMS_PROGRAM_DAYS') : null,
+    ],
 ];
