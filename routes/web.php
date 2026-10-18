@@ -10,4 +10,6 @@ Route::middleware(['auth'])->group(function () {
 
 require __DIR__.'/settings.php';
 require __DIR__.'/users.php';
+require __DIR__.'/batches.php';
+require __DIR__.'/grades.php';
 require __DIR__.'/otp.php';
