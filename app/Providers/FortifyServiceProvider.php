@@ -3,11 +3,15 @@
 namespace App\Providers;
 
 use App\Actions\Fortify\ResetUserPassword;
+use App\Enums\OtpPurpose;
 use App\Models\User;
 use App\Services\AuditLogger;
+use App\Services\OtpService;
+use App\Services\TrustedDeviceService;
 use Illuminate\Auth\Events\Login;
 use Illuminate\Auth\Events\Logout;
 use Illuminate\Cache\RateLimiting\Limit;
+use Illuminate\Http\Exceptions\HttpResponseException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Hash;
@@ -50,9 +54,10 @@ class FortifyServiceProvider extends ServiceProvider
     }
 
     /**
-     * Username + password login. Every failure returns null, which Fortify turns into the
-     * same generic "credentials do not match" error, so the response never reveals whether
-     * a username exists or why a login was refused.
+     * Username + password, then a one-time code unless the device is trusted.
+     * Every refusal returns null, which Fortify turns into the same generic
+     * "credentials do not match" error, so the response never reveals whether a
+     * username exists or why a login was refused.
      */
     private function configureAuthentication(): void
     {
@@ -91,7 +96,39 @@ class FortifyServiceProvider extends ServiceProvider
                 return null;
             }
 
-            return $user;
+            if (! config('ams.otp.required')) {
+                return $user;
+            }
+
+            if ($user->email === null) {
+                $audit->record('auth.login_blocked', null, 'user', $user->id, ['reason' => 'no_email']);
+
+                return null;
+            }
+
+            if (app(TrustedDeviceService::class)->consume($request, $user)) {
+                return $user;
+            }
+
+            $result = app(OtpService::class)->issue($user, OtpPurpose::Login, $request->ip());
+
+            if ($result === OtpService::FAILED) {
+                $audit->record('auth.otp_send_failed', null, 'user', $user->id);
+
+                return null;
+            }
+
+            if ($result === OtpService::SENT) {
+                $audit->record('auth.otp_sent', null, 'user', $user->id);
+            }
+
+            $request->session()->put('otp_pending', [
+                'user_id' => $user->id,
+                'remember' => $request->boolean('remember'),
+                'expires_at' => now()->addMinutes((int) config('ams.otp.pending_minutes'))->timestamp,
+            ]);
+
+            throw new HttpResponseException(redirect()->route('otp.show'));
         });
     }
 

@@ -78,6 +78,21 @@ final class Permissions
         ];
     }
 
+    /**
+     * Permissions held by this user, for the UI only. The server still
+     * authorizes every request independently.
+     *
+     * @return list<string>
+     */
+    public static function for(?User $user): array
+    {
+        if ($user === null || $user->role === null || ! $user->isActive()) {
+            return [];
+        }
+
+        return self::matrix()[$user->role->value] ?? [];
+    }
+
     /** Only active users hold permissions; a deactivated account is denied everything. */
     public static function allows(?User $user, string $permission): bool
     {

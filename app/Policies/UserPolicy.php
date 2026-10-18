@@ -37,4 +37,10 @@ class UserPolicy
     {
         return Permissions::allows($user, Permissions::USERS_MANAGE) && ! $user->is($target);
     }
+
+    /** Resetting someone's password is an admin action; use Settings to change your own. */
+    public function resetPassword(User $user, User $target): bool
+    {
+        return Permissions::allows($user, Permissions::USERS_MANAGE) && ! $user->is($target);
+    }
 }
