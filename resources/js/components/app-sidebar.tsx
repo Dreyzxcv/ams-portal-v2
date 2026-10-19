@@ -54,11 +54,11 @@ const mainNavItems: PermittedNavItem[] = [
         href: violationsIndex(),
         icon: ShieldAlert,
     },
-    { 
-        title: 'Progress', 
-        href: progressIndex(), 
-        icon: TrendingUp, 
-        permission: 'progress.manage' 
+    {
+        title: 'Progress',
+        href: progressIndex(),
+        icon: TrendingUp,
+        permission: 'progress.manage',
     },
 ];
 
@@ -70,11 +70,15 @@ export function AppSidebar() {
     );
 
     return (
-        <Sidebar collapsible="icon" variant="inset">
-            <SidebarHeader>
+        <Sidebar collapsible="icon" variant="inset" className="border-0">
+            <SidebarHeader className="px-3 pt-3 pb-1">
                 <SidebarMenu>
                     <SidebarMenuItem>
-                        <SidebarMenuButton size="lg" asChild>
+                        <SidebarMenuButton
+                            size="lg"
+                            asChild
+                            className="hover:bg-sidebar-accent rounded-xl"
+                        >
                             <Link href={dashboard()} prefetch>
                                 <AppLogo />
                             </Link>
@@ -83,11 +87,11 @@ export function AppSidebar() {
                 </SidebarMenu>
             </SidebarHeader>
 
-            <SidebarContent>
+            <SidebarContent className="px-1.5 py-2">
                 <NavMain items={visibleItems} />
             </SidebarContent>
 
-            <SidebarFooter>
+            <SidebarFooter className="p-3">
                 <NavUser />
             </SidebarFooter>
         </Sidebar>

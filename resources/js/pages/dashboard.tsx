@@ -1,20 +1,16 @@
 import { Head, Link, usePage } from '@inertiajs/react';
 import {
+    ArrowUpRight,
     Award,
-    BadgeCheck,
-    BadgeX,
     ChevronRight,
     CircleCheck,
     ClipboardList,
-    FileClock,
     Flag,
     GraduationCap,
     Hourglass,
     Layers,
-    PenLine,
     Stethoscope,
     TriangleAlert,
-    UserCheck,
     UserX,
     Users,
     Zap,
@@ -29,6 +25,7 @@ import {
     XAxis,
     YAxis,
 } from 'recharts';
+import { LiveGrades } from '@/components/live-grades';
 import { cn } from '@/lib/utils';
 import { dashboard } from '@/routes';
 import type {
@@ -49,8 +46,7 @@ type Props = {
     batches?: BatchSummary[] | null;
 };
 
-const eyebrowClass =
-    'text-muted-foreground font-mono text-[11px] font-medium tracking-widest uppercase';
+/* ---------- Tokens ---------- */
 
 const groupIcons: Record<string, LucideIcon> = {
     Users,
@@ -59,16 +55,6 @@ const groupIcons: Record<string, LucideIcon> = {
     Violations: TriangleAlert,
     Progress: Hourglass,
     Certificates: Award,
-};
-
-const labelIcons: Record<string, LucideIcon> = {
-    'Active users': UserCheck,
-    'Active trainees without a batch': UserX,
-    'Grades entered, last 7 days': PenLine,
-    'Trainees who passed the final exam': BadgeCheck,
-    Pending: FileClock,
-    Issued: BadgeCheck,
-    Revoked: BadgeX,
 };
 
 const tones = {
@@ -106,40 +92,34 @@ const toneBar: Record<Tone, string> = {
     muted: 'bg-muted-foreground/40',
 };
 
-const toneTop: Record<Tone, string> = {
-    blue: 'border-t-blue-500/50',
-    violet: 'border-t-violet-500/50',
-    emerald: 'border-t-emerald-500/50',
-    amber: 'border-t-amber-500/50',
-    sky: 'border-t-sky-500/50',
-    teal: 'border-t-teal-500/50',
-    rose: 'border-t-rose-500/50',
-    muted: 'border-t-border',
-};
-
-const groupTones: Record<string, Tone> = {
-    Users: 'blue',
-    Batches: 'violet',
-    Grades: 'emerald',
-    Violations: 'amber',
-    Progress: 'sky',
-    Certificates: 'teal',
-};
-
-const labelTones: Record<string, Tone> = {
-    Pending: 'amber',
-    Revoked: 'rose',
-    'Active trainees without a batch': 'amber',
+const toneStroke: Record<Tone, string> = {
+    blue: 'stroke-blue-500',
+    violet: 'stroke-violet-500',
+    emerald: 'stroke-emerald-500',
+    amber: 'stroke-amber-500',
+    sky: 'stroke-sky-500',
+    teal: 'stroke-teal-500',
+    rose: 'stroke-rose-500',
+    muted: 'stroke-muted-foreground/40',
 };
 
 const actionLabels: Record<string, string> = {
-    Users: 'Manage Users',
+    Users: 'Manage users',
     Batches: 'Batches',
-    Grades: 'Manage Grades',
-    Violations: 'Manage Violations',
-    Progress: 'Manage Progress',
+    Grades: 'Manage grades',
+    Violations: 'Manage violations',
+    Progress: 'Manage progress',
 };
 
+const card = 'bg-card rounded-2xl border shadow-xs';
+const focusRing =
+    'focus-visible:ring-ring outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-background';
+
+function greeting() {
+    const h = new Date().getHours();
+
+    return h < 12 ? 'Good morning' : h < 18 ? 'Good afternoon' : 'Good evening';
+}
 
 /* ---------- Shared building blocks ---------- */
 
@@ -155,12 +135,12 @@ function IconChip({
     return (
         <span
             className={cn(
-                'flex size-7 shrink-0 items-center justify-center rounded-md',
+                'flex size-9 shrink-0 items-center justify-center rounded-xl',
                 tones[tone],
                 className,
             )}
         >
-            <Icon aria-hidden="true" className="size-4" />
+            <Icon aria-hidden="true" className="size-[18px]" />
         </span>
     );
 }
@@ -175,7 +155,7 @@ function StatusBadge({
     return (
         <span
             className={cn(
-                'inline-flex items-center rounded-full px-2.5 py-0.5 font-mono text-[10px] font-medium tracking-wider uppercase',
+                'inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium',
                 tones[tone],
             )}
         >
@@ -184,78 +164,125 @@ function StatusBadge({
     );
 }
 
-function SectionLabel({ children }: { children: React.ReactNode }) {
+function SectionTitle({ children }: { children: React.ReactNode }) {
     return (
-        <p className={cn(eyebrowClass, 'flex items-center gap-2')}>
-            <span aria-hidden="true" className="bg-border h-px w-4" />
+        <h2 className="text-foreground/90 px-1 pt-2 text-base font-semibold tracking-tight">
             {children}
-        </p>
+        </h2>
+    );
+}
+
+function Ring({
+    value,
+    tone,
+    size = 112,
+    stroke = 10,
+    children,
+}: {
+    value: number;
+    tone: Tone;
+    size?: number;
+    stroke?: number;
+    children?: React.ReactNode;
+}) {
+    const r = (size - stroke) / 2;
+    const c = 2 * Math.PI * r;
+    const pct = Math.min(100, Math.max(0, value));
+
+    return (
+        <div
+            className="relative shrink-0"
+            style={{ width: size, height: size }}
+            role="img"
+            aria-label={`${Math.round(pct)}%`}
+        >
+            <svg width={size} height={size} className="-rotate-90">
+                <circle
+                    cx={size / 2}
+                    cy={size / 2}
+                    r={r}
+                    fill="none"
+                    strokeWidth={stroke}
+                    className="stroke-foreground/10"
+                />
+                <circle
+                    cx={size / 2}
+                    cy={size / 2}
+                    r={r}
+                    fill="none"
+                    strokeWidth={stroke}
+                    strokeLinecap="round"
+                    strokeDasharray={c}
+                    strokeDashoffset={c - (pct / 100) * c}
+                    className={toneStroke[tone]}
+                />
+            </svg>
+            <div className="absolute inset-0 flex flex-col items-center justify-center">
+                {children}
+            </div>
+        </div>
     );
 }
 
 type Chip = { label: string; value: number; tone: Tone };
 
-function Welcome({
-    eyebrow,
+function Hero({
     title,
     subtitle,
     chips = [],
     deco: Deco,
-    roomy,
+    aside,
 }: {
-    eyebrow: string;
     title: string;
     subtitle: string;
     chips?: Chip[];
     deco?: LucideIcon;
-    roomy?: boolean;
+    aside?: React.ReactNode;
 }) {
     return (
-        <div
-            className={cn(
-                'bg-card relative flex flex-wrap items-center justify-between gap-3 overflow-hidden rounded-md border px-5',
-                roomy ? 'py-5' : 'py-3',
-            )}
-        >
+        <div className="relative overflow-hidden rounded-3xl border bg-sky-500/10 p-6 sm:p-8">
             {Deco && (
                 <Deco
                     aria-hidden="true"
-                    className="text-foreground pointer-events-none absolute top-1/2 right-6 size-16 -translate-y-1/2 opacity-[0.06]"
+                    className="text-foreground pointer-events-none absolute right-8 bottom-4 size-32 opacity-[0.05]"
                 />
             )}
-            <div className="relative min-w-0">
-                <p className="font-mono text-[11px] tracking-widest text-sky-600 uppercase dark:text-sky-400">
-                    {eyebrow}
-                </p>
-                <h1 className="truncate text-xl leading-tight font-semibold">
-                    {title}
-                </h1>
-                <p className="text-muted-foreground mt-0.5 text-xs">
-                    {subtitle}
-                </p>
+            <div className="relative flex flex-wrap items-center justify-between gap-6">
+                <div className="min-w-0">
+                    <p className="text-muted-foreground text-sm">
+                        {greeting()}
+                    </p>
+                    <h1 className="mt-1 truncate text-3xl font-semibold tracking-tight sm:text-4xl">
+                        {title}
+                    </h1>
+                    <p className="text-muted-foreground mt-2 max-w-prose text-sm">
+                        {subtitle}
+                    </p>
+                    {chips.length > 0 && (
+                        <dl className="mt-5 flex flex-wrap gap-2">
+                            {chips.map((c) => (
+                                <div
+                                    key={c.label}
+                                    className="bg-background/70 flex items-baseline gap-2 rounded-full border px-3.5 py-1.5 backdrop-blur"
+                                >
+                                    <dd
+                                        className={cn(
+                                            'text-base font-semibold tabular-nums',
+                                            toneText[c.tone],
+                                        )}
+                                    >
+                                        {c.value}
+                                    </dd>
+                                    <dt className="text-muted-foreground text-xs">
+                                        {c.label}
+                                    </dt>
+                                </div>
+                            ))}
+                        </dl>
+                    )}
+                </div>
+                {aside && <div className="relative">{aside}</div>}
             </div>
-            {chips.length > 0 && (
-                <dl className="relative flex flex-wrap gap-2">
-                    {chips.map((c) => (
-                        <div
-                            key={c.label}
-                            className="flex min-w-16 flex-col-reverse rounded-md border px-3 py-1.5 text-center"
-                        >
-                            <dt className="text-muted-foreground mt-0.5 text-[11px]">
-                                {c.label}
-                            </dt>
-                            <dd
-                                className={cn(
-                                    'text-lg leading-none font-semibold tabular-nums',
-                                    toneText[c.tone],
-                                )}
-                            >
-                                {c.value}
-                            </dd>
-                        </div>
-                    ))}
-                </dl>
-            )}
         </div>
     );
 }
@@ -266,28 +293,18 @@ function Panel({
     aside,
     children,
     className,
-    roomy,
 }: {
     title: string;
     icon?: LucideIcon;
     aside?: React.ReactNode;
     children: React.ReactNode;
     className?: string;
-    roomy?: boolean;
 }) {
     return (
         <section
-            className={cn(
-                'bg-card flex min-w-0 flex-col overflow-hidden rounded-md border',
-                className,
-            )}
+            className={cn(card, 'flex min-w-0 flex-col overflow-hidden', className)}
         >
-            <header
-                className={cn(
-                    'flex items-center justify-between gap-2 border-b px-4',
-                    roomy ? 'px-5 py-3.5' : 'py-2.5',
-                )}
-            >
+            <header className="flex items-center justify-between gap-2 px-5 pt-4 pb-3">
                 <h2 className="flex items-center gap-2 text-sm font-semibold">
                     {Icon && (
                         <Icon
@@ -324,7 +341,7 @@ function Meter({
         <div
             className={cn(
                 'bg-muted overflow-hidden rounded-full',
-                thick ? 'h-2.5' : 'h-1.5',
+                thick ? 'h-3' : 'h-2',
             )}
             role="progressbar"
             aria-label={label}
@@ -333,7 +350,7 @@ function Meter({
             aria-valuenow={value}
         >
             <div
-                className={cn('h-full', barClass)}
+                className={cn('h-full rounded-full', barClass)}
                 style={{ width: `${percent}%` }}
             />
         </div>
@@ -356,27 +373,20 @@ function SummaryCard({
     badge: React.ReactNode;
 }) {
     return (
-        <div
-            className={cn(
-                'bg-card rounded-md border border-t-2 p-5',
-                toneTop[tone],
-            )}
-        >
-            <IconChip
-                icon={icon}
-                tone={tone}
-                className="size-10 [&>svg]:size-5"
-            />
+        <div className={cn(card, 'p-5')}>
+            <div className="flex items-start justify-between">
+                <IconChip icon={icon} tone={tone} className="size-11" />
+                {badge}
+            </div>
             <div
                 className={cn(
-                    'mt-3 text-3xl leading-none font-semibold tabular-nums',
+                    'mt-5 text-4xl leading-none font-semibold tracking-tight tabular-nums',
                     toneText[tone],
                 )}
             >
                 {value}
             </div>
-            <div className="text-muted-foreground mt-1.5 text-sm">{label}</div>
-            <div className="mt-3">{badge}</div>
+            <div className="text-muted-foreground mt-2 text-sm">{label}</div>
         </div>
     );
 }
@@ -396,13 +406,10 @@ function BarRow({
 }) {
     return (
         <div>
-            <div className="mb-1.5 flex items-baseline justify-between text-sm">
-                <span className="text-muted-foreground">{label}</span>
+            <div className="mb-2 flex items-baseline justify-between text-sm">
+                <span>{label}</span>
                 <span
-                    className={cn(
-                        'font-mono text-xs font-semibold tabular-nums',
-                        toneText[tone],
-                    )}
+                    className={cn('text-sm font-semibold tabular-nums', toneText[tone])}
                 >
                     {right}
                 </span>
@@ -489,7 +496,7 @@ function TraineeView({ trainee }: { trainee: TraineeSummary }) {
 
     return (
         <>
-            <div className="grid gap-3 sm:grid-cols-3">
+            <div className="grid gap-4 sm:grid-cols-3">
                 {firstCard}
                 <SummaryCard
                     icon={TriangleAlert}
@@ -498,9 +505,7 @@ function TraineeView({ trainee }: { trainee: TraineeSummary }) {
                     label="Violations"
                     badge={
                         violations === 0 ? (
-                            <StatusBadge tone="emerald">
-                                Clean record
-                            </StatusBadge>
+                            <StatusBadge tone="emerald">Clean record</StatusBadge>
                         ) : (
                             <StatusBadge tone="amber">
                                 {violations} recorded
@@ -511,21 +516,21 @@ function TraineeView({ trainee }: { trainee: TraineeSummary }) {
                 <SummaryCard
                     icon={issued ? CircleCheck : Award}
                     tone={issued ? 'emerald' : 'muted'}
-                    value={issued ? '✓' : '—'}
+                    value={issued ? 'Issued' : 'Not yet'}
                     label="Certificate"
                     badge={
                         issued ? (
-                            <StatusBadge tone="emerald">Issued</StatusBadge>
+                            <StatusBadge tone="emerald">Complete</StatusBadge>
                         ) : (
-                            <StatusBadge tone="muted">Not issued yet</StatusBadge>
+                            <StatusBadge tone="muted">Waiting</StatusBadge>
                         )
                     }
                 />
             </div>
 
-            <div className="grid items-stretch gap-3 lg:grid-cols-2">
-                <Panel title="Grades overview" icon={ClipboardList} roomy>
-                    <div className="space-y-4 p-5">
+            <div className="grid items-stretch gap-4 lg:grid-cols-2">
+                <Panel title="Grades overview" icon={ClipboardList}>
+                    <div className="space-y-5 px-5 pt-1 pb-5">
                         {total === 0 ? (
                             <p className="text-muted-foreground py-6 text-center text-sm">
                                 No graded components yet.
@@ -536,9 +541,10 @@ function TraineeView({ trainee }: { trainee: TraineeSummary }) {
                                 const tone: Tone = !has
                                     ? 'muted'
                                     : c.passed === false
-                                    ? 'rose'
-                                    : 'emerald';
+                                      ? 'rose'
+                                      : 'emerald';
                                 const label = c.name || `Component ${i + 1}`;
+
                                 return (
                                     <BarRow
                                         key={`${i}-${label}`}
@@ -575,67 +581,53 @@ function TraineeView({ trainee }: { trainee: TraineeSummary }) {
                     </div>
                 </Panel>
 
-                <Panel title="Training progress" icon={Flag} roomy>
+                <Panel title="Training progress" icon={Flag}>
                     <div className="flex flex-1 flex-col">
-                        <div className="flex-1 p-5">
+                        <div className="flex flex-1 items-center justify-center px-5 py-3">
                             {complete ? (
-                                <div className="flex h-full flex-col items-center justify-center py-4 text-center">
-                                    <IconChip
-                                        icon={GraduationCap}
-                                        tone="emerald"
-                                        className="size-12 [&>svg]:size-6"
-                                    />
+                                <div className="flex flex-col items-center text-center">
+                                    <Ring value={100} tone="emerald" size={120}>
+                                        <GraduationCap className="size-8 text-emerald-600 dark:text-emerald-400" />
+                                    </Ring>
                                     <p className="mt-3 text-lg font-semibold text-emerald-600 dark:text-emerald-400">
                                         Training completed
                                     </p>
-                                    <p className="text-muted-foreground mt-0.5 text-xs">
+                                    <p className="text-muted-foreground text-xs">
                                         All graded components are in
                                     </p>
-                                    <div className="mt-3">
-                                        <StatusBadge tone="emerald">
-                                            100% complete
-                                        </StatusBadge>
-                                    </div>
                                 </div>
                             ) : (
-                                <>
-                                    <div className="mb-1.5 flex items-baseline justify-between text-sm">
-                                        <span className="text-muted-foreground">
-                                            Overall completion
-                                        </span>
-                                        <span className="font-mono text-xs font-semibold text-sky-600 tabular-nums dark:text-sky-400">
+                                <div className="flex w-full flex-wrap items-center justify-center gap-6">
+                                    <Ring value={percent} tone="sky" size={120}>
+                                        <span className="text-2xl font-semibold tabular-nums">
                                             {percent}%
                                         </span>
-                                    </div>
-                                    <Meter
-                                        label="Overall completion"
-                                        value={entered}
-                                        total={total}
-                                        barClass="bg-sky-500"
-                                        thick
-                                    />
-                                    <div className="mt-4 grid grid-cols-2 gap-3">
-                                        <div className="bg-muted/50 rounded-md p-3 text-center">
+                                        <span className="text-muted-foreground text-[11px]">
+                                            complete
+                                        </span>
+                                    </Ring>
+                                    <div className="grid min-w-40 flex-1 grid-cols-2 gap-3">
+                                        <div className="bg-muted/60 rounded-xl p-3 text-center">
                                             <div className="text-2xl font-semibold text-sky-600 tabular-nums dark:text-sky-400">
                                                 {trainee.current_phase ?? '—'}
                                             </div>
-                                            <div className="text-muted-foreground text-[11px]">
+                                            <div className="text-muted-foreground text-xs">
                                                 Current phase
                                             </div>
                                         </div>
-                                        <div className="bg-muted/50 rounded-md p-3 text-center">
+                                        <div className="bg-muted/60 rounded-xl p-3 text-center">
                                             <div className="text-2xl font-semibold text-amber-600 tabular-nums dark:text-amber-400">
                                                 {trainee.remaining_days ?? '—'}
                                             </div>
-                                            <div className="text-muted-foreground text-[11px]">
+                                            <div className="text-muted-foreground text-xs">
                                                 Days left
                                             </div>
                                         </div>
                                     </div>
-                                </>
+                                </div>
                             )}
                         </div>
-                        <dl className="grid grid-cols-2 gap-3 border-t px-5 py-3 text-xs">
+                        <dl className="bg-muted/40 grid grid-cols-2 gap-3 border-t px-5 py-3 text-xs">
                             <div>
                                 <dt className="text-muted-foreground">Batch</dt>
                                 <dd className="font-medium">
@@ -655,8 +647,8 @@ function TraineeView({ trainee }: { trainee: TraineeSummary }) {
                 </Panel>
             </div>
 
-            <Panel title="Certificate status" icon={Award} roomy>
-                <div className="flex items-center gap-4 p-5">
+            <Panel title="Certificate status" icon={Award}>
+                <div className="flex items-center gap-4 px-5 pt-1 pb-5">
                     <IconChip
                         icon={issued ? CircleCheck : Award}
                         tone={issued ? 'emerald' : 'muted'}
@@ -664,10 +656,10 @@ function TraineeView({ trainee }: { trainee: TraineeSummary }) {
                     />
                     {issued ? (
                         <div className="min-w-0">
-                            <p className="text-base font-semibold tracking-wide text-emerald-600 uppercase dark:text-emerald-400">
+                            <p className="text-base font-semibold text-emerald-600 dark:text-emerald-400">
                                 Certificate issued
                             </p>
-                            <p className="text-muted-foreground font-mono text-xs">
+                            <p className="text-muted-foreground text-xs">
                                 ID: {trainee.certificate_number}
                             </p>
                             {trainee.certificate_issued_at && (
@@ -695,53 +687,154 @@ function TraineeView({ trainee }: { trainee: TraineeSummary }) {
 
 /* ---------- Staff ---------- */
 
+type Found = { group: string; stat: StatItem };
+type Titled = Found & { title: string; icon: LucideIcon; tone: Tone };
+
+type MetricSpec = {
+    group?: string;
+    label: string;
+    title: string;
+    icon: LucideIcon;
+    tone: Tone;
+};
+
+// Ordered by operational importance. Stats a role cannot see are skipped.
+const keyMetricSpecs: MetricSpec[] = [
+    { group: 'Users', label: 'Active users', title: 'Active users', icon: Users, tone: 'blue' },
+    {
+        label: 'Active trainees without a batch',
+        title: 'Trainees without a batch',
+        icon: UserX,
+        tone: 'amber',
+    },
+    {
+        group: 'Violations',
+        label: 'Last 30 days',
+        title: 'Violations, 30 days',
+        icon: TriangleAlert,
+        tone: 'rose',
+    },
+    {
+        group: 'Certificates',
+        label: 'Pending',
+        title: 'Pending certificates',
+        icon: Award,
+        tone: 'violet',
+    },
+    {
+        label: 'Grades entered, last 7 days',
+        title: 'Grades entered, 7 days',
+        icon: ClipboardList,
+        tone: 'teal',
+    },
+    {
+        label: 'Trainees who passed the final exam',
+        title: 'Passed final exam',
+        icon: GraduationCap,
+        tone: 'emerald',
+    },
+];
+
+// Actionable when the value is above zero.
+const attentionSpecs: MetricSpec[] = [
+    {
+        label: 'Active trainees without a batch',
+        title: 'Trainees without a batch',
+        icon: UserX,
+        tone: 'amber',
+    },
+    {
+        group: 'Certificates',
+        label: 'Pending',
+        title: 'Certificates pending',
+        icon: Award,
+        tone: 'amber',
+    },
+    {
+        group: 'Violations',
+        label: 'Last 30 days',
+        title: 'Violations this month',
+        icon: TriangleAlert,
+        tone: 'amber',
+    },
+];
+
+function findStat(groups: StatGroup[], spec: MetricSpec): Found | null {
+    for (const g of groups) {
+        if (spec.group && g.title !== spec.group) {
+            continue;
+        }
+
+        const stat = g.stats.find((s) => s.label === spec.label);
+
+        if (stat) {
+            return { group: g.title, stat };
+        }
+    }
+
+    return null;
+}
+
+function resolve(groups: StatGroup[], specs: MetricSpec[]): Titled[] {
+    return specs.flatMap((spec) => {
+        const found = findStat(groups, spec);
+
+        return found
+            ? [{ ...found, title: spec.title, icon: spec.icon, tone: spec.tone }]
+            : [];
+    });
+}
+
 function KpiCard({
-    label,
+    title,
     value,
     href,
-    icon: Icon,
-    tone,
     sub,
-}: StatItem & { icon: LucideIcon; tone: Tone; sub: string }) {
+    icon,
+    tone,
+    emphasis,
+}: {
+    title: string;
+    value: number;
+    href: string | null;
+    sub: string;
+    icon: LucideIcon;
+    tone: Tone;
+    emphasis?: boolean;
+}) {
     const content = (
         <>
-            <div className="flex items-start justify-between gap-2">
-                <div
-                    className={cn(
-                        'text-2xl leading-none font-semibold tabular-nums',
-                        value === 0
-                            ? 'text-muted-foreground/60'
-                            : toneText[tone],
-                    )}
-                >
-                    {value}
-                </div>
-                <IconChip icon={Icon} tone={tone} />
+            <div className="flex items-start justify-between">
+                <IconChip icon={icon} tone={tone} />
+                {href && (
+                    <ArrowUpRight
+                        aria-hidden="true"
+                        className="text-muted-foreground size-4 transition group-hover:translate-x-0.5 group-hover:-translate-y-0.5"
+                    />
+                )}
             </div>
-            <div className="mt-1.5 text-xs leading-snug">{label}</div>
             <div
                 className={cn(
-                    'mt-1 font-mono text-[10px] tracking-wide uppercase opacity-70',
-                    toneText[tone],
+                    'mt-5 text-4xl leading-none font-semibold tracking-tight tabular-nums',
+                    emphasis && value > 0 && toneText.amber,
                 )}
             >
-                {sub}
-                {href && ' →'}
+                {value}
             </div>
+            <div className="mt-2 text-sm font-medium">{title}</div>
+            <div className="text-muted-foreground text-xs">{sub}</div>
         </>
     );
 
-    const base = cn(
-        'bg-card block rounded-md border border-t-2 px-3 py-2.5',
-        toneTop[tone],
-    );
+    const base = cn(card, 'group block p-5');
 
     return href ? (
         <Link
             href={href}
             className={cn(
                 base,
-                'hover:bg-muted/60 focus-visible:ring-ring outline-none focus-visible:ring-2',
+                'hover:border-foreground/20 transition hover:shadow-md',
+                focusRing,
             )}
         >
             {content}
@@ -751,27 +844,160 @@ function KpiCard({
     );
 }
 
+function NeedsAttention({ items }: { items: Titled[] }) {
+    const open = items.filter((i) => i.stat.value > 0);
+
+    if (open.length === 0) {
+        return (
+            <div className="flex items-center gap-3 rounded-2xl border border-emerald-500/20 bg-emerald-500/5 px-5 py-3.5 text-sm">
+                <CircleCheck
+                    aria-hidden="true"
+                    className="size-5 text-emerald-600 dark:text-emerald-400"
+                />
+                Nothing needs attention right now.
+            </div>
+        );
+    }
+
+    return (
+        <div className="rounded-2xl border border-amber-500/25 bg-amber-500/5 p-2">
+            <p className="flex items-center gap-2 px-3 pt-2 pb-1 text-sm font-semibold text-amber-700 dark:text-amber-400">
+                <TriangleAlert aria-hidden="true" className="size-4" />
+                Needs attention
+            </p>
+            <ul className="grid gap-2 p-1 sm:grid-cols-2 lg:grid-cols-3">
+                {open.map(({ title, stat, group, icon: Icon }) => {
+                    const row = (
+                        <>
+                            <span
+                                className={cn(
+                                    'flex size-10 shrink-0 items-center justify-center rounded-xl text-base font-semibold tabular-nums',
+                                    tones.amber,
+                                )}
+                            >
+                                {stat.value}
+                            </span>
+                            <span className="min-w-0 flex-1">
+                                <span className="block truncate text-sm font-medium">
+                                    {title}
+                                </span>
+                                <span className="text-muted-foreground flex items-center gap-1 text-xs">
+                                    <Icon aria-hidden="true" className="size-3" />
+                                    {group}
+                                </span>
+                            </span>
+                            {stat.href && (
+                                <ChevronRight
+                                    aria-hidden="true"
+                                    className="text-muted-foreground size-4 shrink-0"
+                                />
+                            )}
+                        </>
+                    );
+                    const cls =
+                        'bg-card flex items-center gap-3 rounded-xl border p-3';
+
+                    return (
+                        <li key={`${group}-${stat.label}`}>
+                            {stat.href ? (
+                                <Link
+                                    href={stat.href}
+                                    className={cn(
+                                        cls,
+                                        'hover:border-foreground/20 transition hover:shadow-sm',
+                                        focusRing,
+                                    )}
+                                >
+                                    {row}
+                                </Link>
+                            ) : (
+                                <div className={cls}>{row}</div>
+                            )}
+                        </li>
+                    );
+                })}
+            </ul>
+        </div>
+    );
+}
+
+function MoreFigures({ groups }: { groups: StatGroup[] }) {
+    const shown = groups.filter((g) => g.stats.length > 0);
+
+    if (shown.length === 0) {
+        return null;
+    }
+
+    return (
+        <Panel title="All figures" icon={Layers}>
+            <div className="grid gap-4 px-5 pt-1 pb-5 sm:grid-cols-2 xl:grid-cols-3">
+                {shown.map((g) => {
+                    const Icon = groupIcons[g.title] ?? Layers;
+
+                    return (
+                        <div key={g.title} className="bg-muted/40 rounded-xl p-4">
+                            <h3 className="mb-2 flex items-center gap-2 text-sm font-semibold">
+                                <Icon
+                                    aria-hidden="true"
+                                    className="text-muted-foreground size-4"
+                                />
+                                {g.title}
+                            </h3>
+                            <dl className="divide-border/60 divide-y text-sm">
+                                {g.stats.map((s) => (
+                                    <div
+                                        key={s.label}
+                                        className="flex items-baseline justify-between gap-3 py-2"
+                                    >
+                                        <dt className="text-muted-foreground">
+                                            {s.href ? (
+                                                <Link
+                                                    href={s.href}
+                                                    className={cn(
+                                                        'hover:text-foreground rounded',
+                                                        focusRing,
+                                                    )}
+                                                >
+                                                    {s.label}
+                                                </Link>
+                                            ) : (
+                                                s.label
+                                            )}
+                                        </dt>
+                                        <dd className="font-semibold tabular-nums">
+                                            {s.value}
+                                        </dd>
+                                    </div>
+                                ))}
+                            </dl>
+                        </div>
+                    );
+                })}
+            </div>
+        </Panel>
+    );
+}
+
 function QuickActions({
     actions,
-    className,
 }: {
     actions: { label: string; href: string; icon: LucideIcon }[];
-    className?: string;
 }) {
     return (
-        <Panel title="Quick actions" icon={Zap} className={className}>
+        <Panel title="Quick actions" icon={Zap}>
             <nav
                 aria-label="Quick actions"
-                className="grid gap-2 p-3 sm:grid-cols-2 lg:grid-cols-1"
+                className="grid gap-2 px-4 pb-4 sm:grid-cols-2 lg:grid-cols-1"
             >
                 {actions.map((a, i) => (
                     <Link
                         key={a.href}
                         href={a.href}
                         className={cn(
-                            'focus-visible:ring-ring flex items-center gap-2.5 rounded-md border px-3 py-2 text-sm font-medium outline-none focus-visible:ring-2',
+                            'flex items-center gap-3 rounded-xl border px-3 py-2.5 text-sm font-medium transition',
+                            focusRing,
                             i === 0
-                                ? 'bg-primary text-primary-foreground border-transparent hover:opacity-90'
+                                ? 'bg-primary text-primary-foreground border-transparent shadow-sm hover:opacity-90'
                                 : 'hover:bg-muted/60',
                         )}
                     >
@@ -779,7 +1005,7 @@ function QuickActions({
                         <span className="flex-1">{a.label}</span>
                         <ChevronRight
                             aria-hidden="true"
-                            className="size-4 shrink-0 opacity-50"
+                            className="size-4 shrink-0 opacity-60"
                         />
                     </Link>
                 ))}
@@ -797,6 +1023,7 @@ function BatchOverview({
 }) {
     const shown = batches.slice(0, 4);
     const extra = batches.length - shown.length;
+    const maxMembers = Math.max(1, ...shown.map((b) => Number(b.members)));
 
     return (
         <Panel
@@ -806,7 +1033,10 @@ function BatchOverview({
                 href ? (
                     <Link
                         href={href}
-                        className="text-muted-foreground hover:text-foreground focus-visible:ring-ring rounded text-xs outline-none focus-visible:ring-2"
+                        className={cn(
+                            'text-muted-foreground hover:text-foreground rounded text-xs font-medium',
+                            focusRing,
+                        )}
                     >
                         Manage
                     </Link>
@@ -814,38 +1044,34 @@ function BatchOverview({
             }
         >
             {batches.length === 0 ? (
-                <p className="text-muted-foreground px-4 py-6 text-center text-xs">
+                <p className="text-muted-foreground px-5 pb-6 text-center text-sm">
                     No batches yet.
                 </p>
             ) : (
-                <ul className="divide-y">
+                <ul className="space-y-3 px-5 pb-4">
                     {shown.map((b) => (
-                        <li
-                            key={b.id}
-                            className="flex items-center justify-between gap-2 px-4 py-2 text-xs"
-                        >
-                            <span className="flex min-w-0 items-center gap-2">
-                                <span
-                                    aria-hidden="true"
-                                    className="size-2 shrink-0 rounded-sm bg-violet-500"
-                                />
+                        <li key={b.id}>
+                            <div className="mb-1.5 flex items-center justify-between gap-2 text-sm">
                                 <span className="truncate font-medium">
                                     {b.name}
                                 </span>
-                            </span>
-                            <span
-                                className={cn(
-                                    'rounded-full px-2 py-0.5 font-mono text-[10px] tabular-nums',
-                                    tones.violet,
-                                )}
-                                aria-label={`${b.members} trainees`}
-                            >
-                                {b.members}
-                            </span>
+                                <span
+                                    className="text-muted-foreground text-xs tabular-nums"
+                                    aria-label={`${b.members} trainees`}
+                                >
+                                    {b.members} trainees
+                                </span>
+                            </div>
+                            <Meter
+                                label={b.name}
+                                value={Number(b.members)}
+                                total={maxMembers}
+                                barClass={toneBar.violet}
+                            />
                         </li>
                     ))}
                     {extra > 0 && (
-                        <li className="text-muted-foreground px-4 py-2 font-mono text-[11px]">
+                        <li className="text-muted-foreground text-xs">
                             +{extra} more batches
                         </li>
                     )}
@@ -894,19 +1120,19 @@ function TrendPanel({
             icon={ClipboardList}
             className={className}
             aside={
-                <span className="rounded-full bg-sky-500/10 px-2 py-0.5 font-mono text-[10px] tracking-wider text-sky-600 uppercase dark:text-sky-400">
+                <span className="bg-muted text-muted-foreground rounded-full px-2.5 py-1 text-xs font-medium">
                     {sum} in {n} weeks
                 </span>
             }
         >
-            <div className="px-4 py-3">
+            <div className="px-5 pb-5">
                 {max === 0 ? (
-                    <p className="text-muted-foreground py-6 text-center text-xs">
+                    <p className="text-muted-foreground py-10 text-center text-sm">
                         Nothing recorded in the last {n} weeks.
                     </p>
                 ) : (
                     <>
-                        <div className="text-muted-foreground mb-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs">
+                        <div className="text-muted-foreground mb-3 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs">
                             {trend.series.map((s) => (
                                 <span
                                     key={s.label}
@@ -915,11 +1141,8 @@ function TrendPanel({
                                     <span
                                         aria-hidden="true"
                                         className={cn(
-                                            'size-2 rounded-full',
-                                            (
-                                                seriesStyles[s.label] ??
-                                                fallbackSeries
-                                            ).dot,
+                                            'size-2.5 rounded-full',
+                                            (seriesStyles[s.label] ?? fallbackSeries).dot,
                                         )}
                                     />
                                     {s.label}
@@ -930,20 +1153,16 @@ function TrendPanel({
                             </span>
                         </div>
 
-                        <div role="img" aria-label={summary} className="h-32">
+                        <div role="img" aria-label={summary} className="h-44">
                             <ResponsiveContainer width="100%" height="100%">
                                 <BarChart
                                     data={data}
-                                    barGap={2}
-                                    margin={{
-                                        top: 4,
-                                        right: 8,
-                                        bottom: 0,
-                                        left: -24,
-                                    }}
+                                    barGap={3}
+                                    margin={{ top: 4, right: 8, bottom: 0, left: -24 }}
                                 >
                                     <CartesianGrid
                                         vertical={false}
+                                        strokeDasharray="3 3"
                                         stroke="var(--border)"
                                     />
                                     <XAxis
@@ -951,55 +1170,36 @@ function TrendPanel({
                                         tickFormatter={formatWeek}
                                         tickLine={false}
                                         axisLine={false}
-                                        tick={{
-                                            fontSize: 10,
-                                            fill: 'var(--muted-foreground)',
-                                        }}
+                                        tick={{ fontSize: 11, fill: 'var(--muted-foreground)' }}
                                     />
                                     <YAxis
                                         allowDecimals={false}
-                                        domain={[
-                                            0,
-                                            (dataMax: number) =>
-                                                Math.max(dataMax, 3),
-                                        ]}
+                                        domain={[0, (dataMax: number) => Math.max(dataMax, 3)]}
                                         tickCount={4}
                                         tickLine={false}
                                         axisLine={false}
                                         width={40}
-                                        tick={{
-                                            fontSize: 10,
-                                            fill: 'var(--muted-foreground)',
-                                        }}
+                                        tick={{ fontSize: 11, fill: 'var(--muted-foreground)' }}
                                     />
                                     <Tooltip
-                                        cursor={{
-                                            fill: 'var(--muted)',
-                                            opacity: 0.5,
-                                        }}
-                                        labelFormatter={(w) =>
-                                            `Week of ${formatWeek(String(w))}`
-                                        }
+                                        cursor={{ fill: 'var(--muted)', opacity: 0.5 }}
+                                        labelFormatter={(w) => `Week of ${formatWeek(String(w))}`}
                                         contentStyle={{
                                             fontSize: 12,
-                                            borderRadius: 6,
+                                            borderRadius: 12,
                                             background: 'var(--popover)',
                                             color: 'var(--popover-foreground)',
                                             border: '1px solid var(--border)',
+                                            boxShadow: '0 8px 24px rgb(0 0 0 / 0.12)',
                                         }}
                                     />
                                     {trend.series.map((s) => (
                                         <Bar
                                             key={s.label}
                                             dataKey={s.label}
-                                            fill={
-                                                (
-                                                    seriesStyles[s.label] ??
-                                                    fallbackSeries
-                                                ).color
-                                            }
-                                            radius={[2, 2, 0, 0]}
-                                            maxBarSize={14}
+                                            fill={(seriesStyles[s.label] ?? fallbackSeries).color}
+                                            radius={[6, 6, 0, 0]}
+                                            maxBarSize={16}
                                             isAnimationActive={false}
                                         />
                                     ))}
@@ -1038,14 +1238,14 @@ function TrendPanel({
 function ActivityTable({ activity }: { activity: ActivityItem[] }) {
     return (
         <Panel title="Recent activity" icon={ClipboardList}>
-            <div className="max-h-64 overflow-auto">
-                <table className="w-full text-xs">
-                    <thead className="bg-muted sticky top-0 text-left">
+            <div className="max-h-72 overflow-auto border-t">
+                <table className="w-full text-sm">
+                    <thead className="bg-muted/60 text-muted-foreground sticky top-0 text-left text-xs backdrop-blur">
                         <tr>
-                            <th className="px-3 py-2 font-medium">When</th>
-                            <th className="px-3 py-2 font-medium">Who</th>
-                            <th className="px-3 py-2 font-medium">Action</th>
-                            <th className="px-3 py-2 font-medium">Subject</th>
+                            <th className="px-5 py-2.5 font-medium">When</th>
+                            <th className="px-3 py-2.5 font-medium">Who</th>
+                            <th className="px-3 py-2.5 font-medium">Action</th>
+                            <th className="px-3 py-2.5 font-medium">Subject</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -1053,7 +1253,7 @@ function ActivityTable({ activity }: { activity: ActivityItem[] }) {
                             <tr>
                                 <td
                                     colSpan={4}
-                                    className="text-muted-foreground px-3 py-6 text-center"
+                                    className="text-muted-foreground px-5 py-8 text-center"
                                 >
                                     No activity yet.
                                 </td>
@@ -1064,20 +1264,20 @@ function ActivityTable({ activity }: { activity: ActivityItem[] }) {
                                 key={item.id}
                                 className="hover:bg-muted/40 border-t"
                             >
-                                <td className="text-muted-foreground px-3 py-1.5 whitespace-nowrap tabular-nums">
+                                <td className="text-muted-foreground px-5 py-2.5 whitespace-nowrap tabular-nums">
                                     {item.occurred_at
-                                        ? new Date(
-                                              item.occurred_at,
-                                          ).toLocaleString()
+                                        ? new Date(item.occurred_at).toLocaleString()
                                         : ''}
                                 </td>
-                                <td className="px-3 py-1.5 font-mono whitespace-nowrap">
+                                <td className="px-3 py-2.5 font-medium whitespace-nowrap">
                                     {item.actor}
                                 </td>
-                                <td className="px-3 py-1.5 font-mono whitespace-nowrap">
-                                    {item.action}
+                                <td className="px-3 py-2.5 whitespace-nowrap">
+                                    <span className="bg-muted rounded-md px-2 py-0.5 text-xs">
+                                        {item.action}
+                                    </span>
                                 </td>
-                                <td className="text-muted-foreground px-3 py-1.5">
+                                <td className="text-muted-foreground px-3 py-2.5">
                                     {item.subject ?? ''}
                                 </td>
                             </tr>
@@ -1102,25 +1302,20 @@ export default function Dashboard({
     const { auth } = usePage<{ auth?: { user?: { name?: string } } }>().props;
     const name = auth?.user?.name ?? (mode === 'trainee' ? 'Trainee' : 'Staff');
 
-    const stat = (group: string, label: string) =>
-        groups
-            .find((g) => g.title === group)
-            ?.stats.find((s) => s.label === label)?.value;
+    const key = resolve(groups, keyMetricSpecs);
+    const attention = resolve(groups, attentionSpecs);
 
-    const chips: Chip[] = (
-        [
-            ['Total', stat('Users', 'Total users'), 'blue'],
-            ['Active', stat('Users', 'Active users'), 'emerald'],
-            ['Violations', stat('Violations', 'Last 30 days'), 'amber'],
-            ['Batches', stat('Batches', 'Batches'), 'violet'],
-        ] as const
-    ).flatMap(([label, value, tone]) =>
-        value === undefined ? [] : [{ label, value, tone }],
-    );
+    // Everything not already shown as a key figure goes into "All figures".
+    const keyIds = new Set(key.map((k) => `${k.group}|${k.stat.label}`));
+    const rest = groups.map((g) => ({
+        ...g,
+        stats: g.stats.filter((s) => !keyIds.has(`${g.title}|${s.label}`)),
+    }));
 
     // Quick actions come from the links the role already has (first link per group).
     const actions = groups.flatMap((g) => {
         const href = g.stats.find((s) => s.href)?.href;
+
         return href && actionLabels[g.title]
             ? [
                   {
@@ -1137,33 +1332,58 @@ export default function Dashboard({
         ?.stats.find((s) => s.href)?.href;
     const side = actions.length > 0 || batches != null;
 
+    const traineePercent =
+        trainee && Number(trainee.grades_total) > 0
+            ? Math.min(
+                  100,
+                  Math.round(
+                      (Number(trainee.grades_entered) /
+                          Number(trainee.grades_total)) *
+                          100,
+                  ),
+              )
+            : 0;
+
     return (
         <>
             <Head title="Dashboard" />
+            {mode === 'trainee' && <LiveGrades only={['trainee']} />}
 
-            <div className="space-y-3 p-4">
+            <div className="mx-auto w-full max-w-7xl space-y-4 p-4 sm:p-6">
                 {mode === 'trainee' ? (
                     <>
-                        <Welcome
-                            roomy
+                        <Hero
                             deco={Stethoscope}
-                            eyebrow="Welcome back"
                             title={name}
                             subtitle={
                                 trainee
-                                    ? `${trainee.batch ?? 'No batch assigned'} · Your progress at a glance`
-                                    : 'Your progress at a glance'
+                                    ? `${trainee.batch ?? 'No batch assigned'}. Here is where your training stands today.`
+                                    : 'Here is where your training stands today.'
+                            }
+                            aside={
+                                trainee ? (
+                                    <Ring value={traineePercent} tone="sky" size={104}>
+                                        <span className="text-xl font-semibold tabular-nums">
+                                            {traineePercent}%
+                                        </span>
+                                    </Ring>
+                                ) : undefined
                             }
                         />
                         {trainee && <TraineeView trainee={trainee} />}
                     </>
                 ) : (
                     <>
-                        <Welcome
-                            eyebrow="Command overview"
+                        <Hero
                             title={name}
-                            subtitle="Figures shown are limited to what your role can access"
-                            chips={chips}
+                            subtitle="Figures shown are limited to what your role can access."
+                            chips={attention
+                                .filter((a) => a.stat.value > 0)
+                                .map((a) => ({
+                                    label: a.title,
+                                    value: a.stat.value,
+                                    tone: 'amber' as Tone,
+                                }))}
                         />
 
                         {groups.length === 0 && (
@@ -1172,35 +1392,35 @@ export default function Dashboard({
                             </p>
                         )}
 
-                        {groups.length > 0 && (
+                        {attention.length > 0 && (
+                            <NeedsAttention items={attention} />
+                        )}
+
+                        {key.length > 0 && (
                             <>
-                                <SectionLabel>Overview</SectionLabel>
-                                <div className="grid grid-cols-2 gap-2 md:grid-cols-3 xl:grid-cols-4">
-                                    {groups.flatMap((group) =>
-                                        group.stats.map((s) => (
-                                            <KpiCard
-                                                key={`${group.title}-${s.label}`}
-                                                {...s}
-                                                sub={group.title}
-                                                icon={
-                                                    labelIcons[s.label] ??
-                                                    groupIcons[group.title] ??
-                                                    Layers
-                                                }
-                                                tone={
-                                                    labelTones[s.label] ??
-                                                    groupTones[group.title] ??
-                                                    'blue'
-                                                }
-                                            />
-                                        )),
-                                    )}
+                                <SectionTitle>Key figures</SectionTitle>
+                                <div className="grid grid-cols-2 gap-4 lg:grid-cols-3">
+                                    {key.map(({ group, stat, title, icon, tone }) => (
+                                        <KpiCard
+                                            key={`${group}-${stat.label}`}
+                                            title={title}
+                                            value={stat.value}
+                                            href={stat.href}
+                                            sub={group}
+                                            icon={icon}
+                                            tone={tone}
+                                            emphasis={
+                                                stat.label ===
+                                                'Active trainees without a batch'
+                                            }
+                                        />
+                                    ))}
                                 </div>
                             </>
                         )}
 
                         {(trend || side) && (
-                            <div className="grid items-start gap-3 lg:grid-cols-3">
+                            <div className="grid items-start gap-4 lg:grid-cols-3">
                                 {trend && (
                                     <TrendPanel
                                         trend={trend}
@@ -1208,15 +1428,27 @@ export default function Dashboard({
                                     />
                                 )}
                                 {side && (
-                                    <div className={cn('space-y-3', !trend && 'lg:col-span-3')}>
-                                        {batches != null && (
-                                            <BatchOverview batches={batches} href={batchesHref} />
+                                    <div
+                                        className={cn(
+                                            'space-y-4',
+                                            !trend && 'lg:col-span-3',
                                         )}
-                                        {actions.length > 0 && <QuickActions actions={actions} />}
+                                    >
+                                        {batches != null && (
+                                            <BatchOverview
+                                                batches={batches}
+                                                href={batchesHref}
+                                            />
+                                        )}
+                                        {actions.length > 0 && (
+                                            <QuickActions actions={actions} />
+                                        )}
                                     </div>
                                 )}
                             </div>
                         )}
+
+                        <MoreFigures groups={rest} />
 
                         {activity && <ActivityTable activity={activity} />}
                     </>
