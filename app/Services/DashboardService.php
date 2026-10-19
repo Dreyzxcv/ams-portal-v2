@@ -16,6 +16,7 @@ use App\Models\User;
 use App\Models\Violation;
 use App\Support\Permissions;
 use App\Support\ProgramSchedule;
+use Illuminate\Support\Carbon;
 
 class DashboardService
 {
@@ -132,7 +133,19 @@ class DashboardService
                 ])->values()
             : null;
 
-        return ['mode' => 'staff', 'groups' => $groups, 'activity' => $activity, 'trainee' => null];
+        $batches = Permissions::allows($user, Permissions::BATCHES_VIEW)
+            ? Batch::query()
+                ->withCount('activeAssignments')
+                ->orderByDesc('id')
+                ->get()
+                ->map(fn (Batch $b) => [
+                    'id' => $b->id,
+                    'name' => $b->name,
+                    'members' => $b->active_assignments_count,
+                ])->values()
+            : null;
+
+        return ['mode' => 'staff', 'batches' => $batches, 'groups' => $groups, 'activity' => $activity, 'trainee' => null, 'trend' => $this->trend($user)];
     }
 
     /** @return array<string, mixed> */
@@ -159,19 +172,74 @@ class DashboardService
         return [
             'mode' => 'trainee',
             'groups' => [],
-            'activity' => null,
+            'activity' => null,   
+            'batches' => null,
             'trainee' => [
                 'batch' => $batch?->name,
                 'current_phase' => $progress?->current_phase,
                 'started_on' => $progress?->started_on?->toDateString(),
+                'components' => $components->sortBy('id')->map(function ($c) use ($records) {
+                    $score = $records->get($c->id)?->score;
+
+                    return [
+                        'name' => $c->name ?? $c->label ?? $c->title ?? $c->code ?? "Component {$c->id}",
+                        'score' => $score === null ? null : (float) $score,
+                        'max' => $c->max_score !== null ? (float) $c->max_score : null,
+                        'passed' => $score === null ? null : $c->isPassing($score),
+                    ];
+                })->values(),
                 'grades_total' => $components->count(),
                 'grades_entered' => $entered,
                 'grades_passed' => $passed,
                 'violations' => Violation::where('trainee_id', $user->id)->count(),
                 'certificate_number' => $certificate?->certificate_number,
                 'certificate_issued_at' => $certificate?->issued_at?->toDateString(),
+                'remaining_days' => ProgramSchedule::remainingDays($progress?->started_on),
+                'trend' => null,
             ],
-            'remaining_days' => ProgramSchedule::remainingDays($progress?->started_on),
         ];
+    }
+
+    /** @return array{weeks: list<string>, series: list<array{label: string, values: list<int>}>}|null */
+    private function trend(User $user): ?array
+    {
+        $weeks = 8;
+        $start = now()->startOfWeek()->subWeeks($weeks - 1);
+        $labels = collect(range(0, $weeks - 1))
+            ->map(fn ($i) => $start->copy()->addWeeks($i)->toDateString())
+            ->all();
+
+        $bucket = function ($dates) use ($labels) {
+            $counts = array_fill_keys($labels, 0);
+            foreach ($dates as $d) {
+                if ($d === null) {
+                    continue;
+                }
+                $key = Carbon::parse($d)->startOfWeek()->toDateString();
+                if (isset($counts[$key])) {
+                    $counts[$key]++;
+                }
+            }
+
+            return array_values($counts);
+        };
+
+        $series = [];
+
+        if (Permissions::allows($user, Permissions::GRADES_VIEW_ALL)) {
+            $series[] = [
+                'label' => 'Grades entered',
+                'values' => $bucket(GradeRecord::where('graded_at', '>=', $start)->pluck('graded_at')),
+            ];
+        }
+
+        if (Permissions::allows($user, Permissions::VIOLATIONS_MANAGE)) {
+            $series[] = [
+                'label' => 'Violations',
+                'values' => $bucket(Violation::where('occurred_on', '>=', $start->toDateString())->pluck('occurred_on')),
+            ];
+        }
+
+        return $series === [] ? null : ['weeks' => $labels, 'series' => $series];
     }
 }

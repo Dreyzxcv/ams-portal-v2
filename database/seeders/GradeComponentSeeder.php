@@ -15,11 +15,11 @@ class GradeComponentSeeder extends Seeder
         $now = now();
 
         $rows = [
-            ['key' => 'phase_1',    'label' => 'Phase 1',          'sequence' => 1, 'max_score' => 25,  'pass_score' => 16, 'is_final' => false],
-            ['key' => 'phase_2',    'label' => 'Phase 2',          'sequence' => 2, 'max_score' => 50,  'pass_score' => 25, 'is_final' => false],
-            ['key' => 'phase_3_1',  'label' => 'Phase 3.1',        'sequence' => 3, 'max_score' => 25,  'pass_score' => 16, 'is_final' => false],
-            ['key' => 'phase_3_2',  'label' => 'Phase 3.2',        'sequence' => 4, 'max_score' => 25,  'pass_score' => 16, 'is_final' => false],
-            ['key' => 'phase_4',    'label' => 'Phase 4',          'sequence' => 5, 'max_score' => 30,  'pass_score' => 15, 'is_final' => false],
+            ['key' => 'phase_1',    'label' => 'Phase 1: Introduction to Army Medical School',          'sequence' => 1, 'max_score' => 25,  'pass_score' => 16, 'is_final' => false],
+            ['key' => 'phase_2',    'label' => 'Phase 2: Practice Inspection',          'sequence' => 2, 'max_score' => 50,  'pass_score' => 25, 'is_final' => false],
+            ['key' => 'phase_3_1',  'label' => 'Phase 3.1: Driving Course',        'sequence' => 3, 'max_score' => 25,  'pass_score' => 16, 'is_final' => false],
+            ['key' => 'phase_3_2',  'label' => 'Phase 3.2: Sickness and Treatment Course',        'sequence' => 4, 'max_score' => 25,  'pass_score' => 16, 'is_final' => false],
+            ['key' => 'phase_4',    'label' => 'Phase 4: Medical Deployment & Situational Report Course',          'sequence' => 5, 'max_score' => 30,  'pass_score' => 15, 'is_final' => false],
             ['key' => 'final_exam', 'label' => 'Final Examination', 'sequence' => 6, 'max_score' => 100, 'pass_score' => 60, 'is_final' => true],
         ];
 
