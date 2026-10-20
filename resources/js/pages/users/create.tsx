@@ -71,19 +71,6 @@ export default function UsersCreate({ roles }: Props) {
                                 </div>
 
                                 <div className="grid gap-2">
-                                    <Label htmlFor="email">Email</Label>
-                                    <Input
-                                        id="email"
-                                        name="email"
-                                        type="email"
-                                        autoComplete="off"
-                                        required
-                                        className="rounded-xl"
-                                    />
-                                    <InputError message={errors.email} />
-                                </div>
-
-                                <div className="grid gap-2">
                                     <Label htmlFor="role">Role</Label>
                                     <select
                                         id="role"

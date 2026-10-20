@@ -22,6 +22,8 @@ use Illuminate\Validation\Rules\Password;
 use Inertia\Inertia;
 use Laravel\Fortify\Features;
 use Laravel\Fortify\Fortify;
+use App\Http\Controllers\Auth\EmailSetupController;
+use App\Http\Controllers\Auth\OtpChallengeController;
 
 class FortifyServiceProvider extends ServiceProvider
 {
@@ -101,9 +103,17 @@ class FortifyServiceProvider extends ServiceProvider
             }
 
             if ($user->email === null) {
-                $audit->record('auth.login_blocked', null, 'user', $user->id, ['reason' => 'no_email']);
+                $audit->record('auth.email_setup_started', null, 'user', $user->id);
 
-                return null;
+                $request->session()->forget(OtpChallengeController::SESSION_KEY);
+                $request->session()->put(EmailSetupController::SESSION_KEY, [
+                    'user_id' => $user->id,
+                    'remember' => $request->boolean('remember'),
+                    'email' => null,
+                    'expires_at' => now()->addMinutes((int) config('ams.otp.pending_minutes'))->timestamp,
+                ]);
+
+                throw new HttpResponseException(redirect()->route('email-setup.show'));
             }
 
             if (app(TrustedDeviceService::class)->consume($request, $user)) {
@@ -121,6 +131,8 @@ class FortifyServiceProvider extends ServiceProvider
             if ($result === OtpService::SENT) {
                 $audit->record('auth.otp_sent', null, 'user', $user->id);
             }
+
+            $request->session()->forget(EmailSetupController::SESSION_KEY);
 
             $request->session()->put('otp_pending', [
                 'user_id' => $user->id,

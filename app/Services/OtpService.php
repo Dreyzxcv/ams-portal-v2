@@ -19,11 +19,11 @@ class OtpService
     public const FAILED = 'failed';
 
     /**
-     * Creates a challenge and emails the code. Returns SENT, COOLDOWN (a live code was
-     * sent very recently, so nothing new is sent) or FAILED (the email could not be sent;
-     * nothing is stored in that case).
+     * Creates a challenge and emails the code. $email overrides the destination for
+     * addresses not yet saved on the user, and binds the code to that address.
+     * Returns SENT, COOLDOWN or FAILED (nothing is stored on failure).
      */
-    public function issue(User $user, OtpPurpose $purpose, ?string $ip): string
+    public function issue(User $user, OtpPurpose $purpose, ?string $ip, ?string $email = null): string
     {
         $recent = OtpChallenge::query()
             ->where('user_id', $user->id)
@@ -39,9 +39,14 @@ class OtpService
 
         $code = str_pad((string) random_int(0, 999999), 6, '0', STR_PAD_LEFT);
         $minutes = (int) config('ams.otp.ttl_minutes');
+        $destination = $email ?? $user->email;
+
+        if ($destination === null) {
+            return self::FAILED;
+        }
 
         try {
-            DB::transaction(function () use ($user, $purpose, $ip, $code, $minutes) {
+            DB::transaction(function () use ($user, $purpose, $ip, $code, $minutes, $email, $destination) {
                 // Older unused codes are superseded.
                 OtpChallenge::query()
                     ->where('user_id', $user->id)
@@ -52,13 +57,13 @@ class OtpService
                 OtpChallenge::create([
                     'user_id' => $user->id,
                     'purpose' => $purpose,
-                    'code_hash' => $this->hash($user, $purpose, $code),
+                    'code_hash' => $this->hash($user, $purpose, $code, $email),
                     'expires_at' => now()->addMinutes($minutes),
                     'ip_address' => $ip,
                 ]);
 
                 // If sending fails, the exception rolls the challenge back too.
-                Mail::to($user->email)->send(new LoginOtpMail($code, $minutes));
+                Mail::to($destination)->send(new LoginOtpMail($code, $minutes));
             });
         } catch (Throwable $e) {
             report($e);
@@ -70,9 +75,9 @@ class OtpService
     }
 
     /** Checks a code. Every check counts as an attempt; a correct code is consumed. */
-    public function verify(User $user, OtpPurpose $purpose, string $code): bool
+    public function verify(User $user, OtpPurpose $purpose, string $code, ?string $email = null): bool
     {
-        return DB::transaction(function () use ($user, $purpose, $code) {
+        return DB::transaction(function () use ($user, $purpose, $code, $email) {
             $challenge = OtpChallenge::query()
                 ->where('user_id', $user->id)
                 ->where('purpose', $purpose->value)
@@ -88,7 +93,7 @@ class OtpService
 
             $challenge->increment('attempts');
 
-            if (! hash_equals($challenge->code_hash, $this->hash($user, $purpose, $code))) {
+            if (! hash_equals($challenge->code_hash, $this->hash($user, $purpose, $code, $email))) {
                 return false;
             }
 
@@ -98,8 +103,14 @@ class OtpService
         });
     }
 
-    private function hash(User $user, OtpPurpose $purpose, string $code): string
+    private function hash(User $user, OtpPurpose $purpose, string $code, ?string $email = null): string
     {
-        return hash_hmac('sha256', $user->id.'|'.$purpose->value.'|'.$code, (string) config('app.key'));
+        $payload = $user->id.'|'.$purpose->value.'|'.$code;
+
+        if ($email !== null) {
+            $payload .= '|'.$email;
+        }
+
+        return hash_hmac('sha256', $payload, (string) config('app.key'));
     }
 }
