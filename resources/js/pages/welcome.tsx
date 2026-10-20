@@ -27,8 +27,9 @@ import { dashboard, login } from '@/routes';
 import heroImage from '../../images/landing-page-1.png';
 import amsLogo from '../../images/ams-logo.png';
 import type { IntakeBanner } from '@/types/intake';
-import AnnouncementMemo from '@/components/announcement-memo';
+import AnnouncementCard from '@/components/announcement-card';
 import type { PublicAnnouncement } from '@/types/announcement';
+import { archive } from '@/routes/announcements';
 
 // Hero image. Swap the file at resources/images/landing-page-1.png anytime.
 const HERO_IMAGE: string | null = heroImage;
@@ -197,6 +198,8 @@ export default function Welcome({
 
     const go = (n: number) =>
         setSlide((n + ABOUT_SLIDES.length) % ABOUT_SLIDES.length);
+
+    const latestAnnouncements = announcements.slice(0, 3);
 
     return (
         <>
@@ -494,14 +497,26 @@ export default function Welcome({
 
                     {/* Announcements */}
                     <section id="announcements" className="scroll-mt-24">
-                        <SectionHeading
-                            title="Announcements"
-                            description="Official notices, school orders, and phase updates from the Office of the Dean of Medicine."
-                        />
-                        {announcements.length > 0 ? (
-                            <div className="space-y-4">
-                                {announcements.map((a) => (
-                                    <AnnouncementMemo key={a.id} a={a} />
+                        <div className="mb-6 flex items-center justify-between gap-4">
+                            <div className="flex items-center gap-3">
+                                <IconChip icon={Megaphone} tone="amber" />
+                                <h2 className="text-2xl font-semibold tracking-tight sm:text-3xl">
+                                    Announcements
+                                </h2>
+                            </div>
+                            <Link
+                                href={archive()}
+                                className="text-muted-foreground hover:text-foreground inline-flex items-center gap-1 text-sm font-medium transition-colors"
+                            >
+                                View all
+                                <ArrowRight aria-hidden="true" className="size-4" />
+                            </Link>
+                        </div>
+
+                        {latestAnnouncements.length > 0 ? (
+                            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                                {latestAnnouncements.map((a) => (
+                                    <AnnouncementCard key={a.id} a={a} />
                                 ))}
                             </div>
                         ) : (

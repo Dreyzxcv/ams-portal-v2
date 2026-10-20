@@ -5,6 +5,7 @@ export type PublicAnnouncement = {
     subject: string;
     body: string;
     signature: string;
+    is_pinned: boolean;
     published_label: string | null;
 };
 

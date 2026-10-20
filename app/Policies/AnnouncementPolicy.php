@@ -20,4 +20,6 @@ class AnnouncementPolicy
     public function publish(User $user, Announcement $a): bool { return $this->manages($user); }
     public function unpublish(User $user, Announcement $a): bool { return $this->manages($user); }
     public function retryDiscord(User $user, Announcement $a): bool { return $this->manages($user); }
+    public function pin(User $user, Announcement $a): bool { return $this->manages($user); }
+    public function unpin(User $user, Announcement $a): bool { return $this->manages($user); }
 }

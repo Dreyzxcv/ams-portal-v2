@@ -104,6 +104,28 @@ class AnnouncementController extends Controller
         return back()->with('status', $this->statusMessage($announcement));
     }
 
+    public function pin(Announcement $announcement): RedirectResponse
+    {
+        Gate::authorize('pin', $announcement);
+
+        abort_unless($announcement->isPublished(), 422, 'Only published announcements can be pinned.');
+
+        if (! $announcement->isPinned()) {
+            $announcement->forceFill(['pinned_at' => now()])->save();
+        }
+
+        return back();
+    }
+
+    public function unpin(Announcement $announcement): RedirectResponse
+    {
+        Gate::authorize('unpin', $announcement);
+
+        $announcement->forceFill(['pinned_at' => null])->save();
+
+        return back();
+    }
+
     private function statusMessage(Announcement $a, string $default = 'Announcement saved.'): string
     {
         if (! $a->isPublished()) {
@@ -125,11 +147,12 @@ class AnnouncementController extends Controller
             'body' => $a->body,
             'signature' => $a->signature,
             'is_published' => $a->isPublished(),
-            'published_label' => $a->published_at?->format('j M Y, H:i'),
+            'is_pinned' => $a->isPinned(),
+            'published_label' => Announcement::displayLabel($a->published_at),
             'author' => $a->author?->name,
             'discord_status' => $a->discord_status->value,
             'discord_error' => $a->discord_error,
-            'discord_sent_label' => $a->discord_sent_at?->format('j M Y, H:i'),
+            'discord_sent_label' => Announcement::displayLabel($a->discord_sent_at),
         ];
     }
 }

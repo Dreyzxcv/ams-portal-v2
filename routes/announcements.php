@@ -1,10 +1,14 @@
 <?php
 
 use App\Http\Controllers\AnnouncementController;
+use App\Http\Controllers\PublicAnnouncementController;
 use App\Models\Announcement;
 use Illuminate\Support\Facades\Route;
 
-Route::middleware(['auth', 'can:viewAny,'.Announcement::class]) // plus any middleware your other route files use
+Route::get('announcements/archive', [PublicAnnouncementController::class, 'index'])
+    ->name('announcements.archive');
+
+Route::middleware(['auth', 'can:viewAny,'.Announcement::class])
     ->prefix('announcements')->name('announcements.')->group(function () {
         Route::get('/', [AnnouncementController::class, 'index'])->name('index');
         Route::get('create', [AnnouncementController::class, 'create'])->name('create');
@@ -17,5 +21,7 @@ Route::middleware(['auth', 'can:viewAny,'.Announcement::class]) // plus any midd
             Route::post('{announcement}/publish', [AnnouncementController::class, 'publish'])->name('publish');
             Route::post('{announcement}/unpublish', [AnnouncementController::class, 'unpublish'])->name('unpublish');
             Route::post('{announcement}/discord/retry', [AnnouncementController::class, 'retry'])->name('retry');
+            Route::post('{announcement}/pin', [AnnouncementController::class, 'pin'])->name('pin');
+            Route::post('{announcement}/unpin', [AnnouncementController::class, 'unpin'])->name('unpin');
         });
     });

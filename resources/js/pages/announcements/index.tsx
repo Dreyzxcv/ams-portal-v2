@@ -1,6 +1,7 @@
 import { Head, Link, router, usePage } from '@inertiajs/react';
 import { Button } from '@/components/ui/button';
-import { create, destroy, edit, index, publish, retry, unpublish } from '@/routes/announcements';
+import { Pin, PinOff } from 'lucide-react';
+import { create, destroy, edit, index, pin, publish, retry, unpin, unpublish } from '@/routes/announcements';
 import type { DiscordStatus, ManagedAnnouncement } from '@/types/announcement';
 
 type Paginated = {
@@ -63,6 +64,11 @@ export default function Index({ announcements }: { announcements: Paginated }) {
                                         >
                                             {a.is_published ? `Published ${a.published_label}` : 'Draft'}
                                         </span>
+                                        {a.is_published && a.is_pinned && (
+                                            <span className="rounded-full bg-amber-500/10 px-2.5 py-1 text-amber-600 dark:text-amber-400">
+                                                Pinned
+                                            </span>
+                                        )}
                                         {a.is_published && (
                                             <span className={`rounded-full px-2.5 py-1 ${d.cls}`}>{d.text}</span>
                                         )}
@@ -88,6 +94,16 @@ export default function Index({ announcements }: { announcements: Paginated }) {
                                     {a.is_published && (
                                         <Button size="sm" variant="outline" onClick={() => post(unpublish.url(a.id))}>
                                             Unpublish
+                                        </Button>
+                                    )}
+                                    {a.is_published && (
+                                        <Button
+                                            size="sm"
+                                            variant="outline"
+                                            onClick={() => post(a.is_pinned ? unpin.url(a.id) : pin.url(a.id))}
+                                        >
+                                            {a.is_pinned ? <PinOff /> : <Pin />}
+                                            {a.is_pinned ? 'Unpin' : 'Pin'}
                                         </Button>
                                     )}
                                     {a.is_published && (a.discord_status === 'failed' || a.discord_status === 'sending') && (
