@@ -26,4 +26,12 @@ class Batch extends Model
     {
         return $this->assignments()->whereNull('unassigned_at');
     }
+
+    public function numberLabel(): string
+    {
+        $name = trim($this->name);
+        $label = trim((string) preg_replace('/^batch\s*[-:#.]?\s*/i', '', $name));
+
+        return $label === '' ? $name : $label;
+    }
 }

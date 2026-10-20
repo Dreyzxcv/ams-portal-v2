@@ -2,13 +2,15 @@
 
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\WelcomeController;
 
-Route::inertia('/', 'welcome')->name('home');
+Route::get('/', WelcomeController::class)->name('home');
 
 Route::middleware(['auth'])->group(function () {
     Route::get('dashboard', DashboardController::class)->name('dashboard');
 });
 
+require __DIR__.'/intake.php';
 require __DIR__.'/settings.php';
 require __DIR__.'/users.php';
 require __DIR__.'/batches.php';

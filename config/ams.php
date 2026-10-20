@@ -17,4 +17,10 @@ return [
         // Total program length in days. Remaining days are computed from this; null = not configured.
         'program_days' => env('AMS_PROGRAM_DAYS') !== null ? (int) env('AMS_PROGRAM_DAYS') : null,
     ],
+    'intake' => [
+        'messages' => [
+            'open' => 'Now accepting Batch :batch applicants.',
+            'closed' => 'Batch :batch is currently ongoing.',
+        ],
+    ],
 ];
