@@ -27,6 +27,8 @@ import { dashboard, login } from '@/routes';
 import heroImage from '../../images/landing-page-1.png';
 import amsLogo from '../../images/ams-logo.png';
 import type { IntakeBanner } from '@/types/intake';
+import AnnouncementMemo from '@/components/announcement-memo';
+import type { PublicAnnouncement } from '@/types/announcement';
 
 // Hero image. Swap the file at resources/images/landing-page-1.png anytime.
 const HERO_IMAGE: string | null = heroImage;
@@ -166,7 +168,13 @@ function SectionHeading({
     );
 }
 
-export default function Welcome({ intake }: { intake: IntakeBanner | null }) {
+export default function Welcome({
+    intake,
+    announcements,
+}: {
+    intake: IntakeBanner | null;
+    announcements: PublicAnnouncement[];
+}) {
     const { auth } = usePage().props;
     const [menuOpen, setMenuOpen] = useState(false);
     const [slide, setSlide] = useState(0);
@@ -490,20 +498,21 @@ export default function Welcome({ intake }: { intake: IntakeBanner | null }) {
                             title="Announcements"
                             description="Official notices, school orders, and phase updates from the Office of the Dean of Medicine."
                         />
-                        <div className="flex flex-col items-center gap-3 rounded-2xl border border-dashed border-amber-500/40 bg-amber-500/5 px-6 py-12 text-center">
-                            <IconChip
-                                icon={Megaphone}
-                                tone="amber"
-                                className="size-12"
-                            />
-                            <p className="text-base font-semibold">
-                                Coming soon
-                            </p>
-                            <p className="text-muted-foreground max-w-sm text-sm">
-                                Announcements will show up here once the Office
-                                of the Dean posts them.
-                            </p>
-                        </div>
+                        {announcements.length > 0 ? (
+                            <div className="space-y-4">
+                                {announcements.map((a) => (
+                                    <AnnouncementMemo key={a.id} a={a} />
+                                ))}
+                            </div>
+                        ) : (
+                            <div className="flex flex-col items-center gap-3 rounded-2xl border border-dashed border-amber-500/40 bg-amber-500/5 px-6 py-12 text-center">
+                                <IconChip icon={Megaphone} tone="amber" className="size-12" />
+                                <p className="text-base font-semibold">No announcements yet</p>
+                                <p className="text-muted-foreground max-w-sm text-sm">
+                                    Announcements will show up here once the Office of the Dean posts them.
+                                </p>
+                            </div>
+                        )}
                     </section>
 
                     {/* CTA */}

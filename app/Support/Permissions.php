@@ -29,6 +29,8 @@ final class Permissions
 
     public const SETTINGS_MANAGE = 'settings.manage';
 
+    public const ANNOUNCEMENTS_MANAGE = 'announcements.manage';
+
     /** @return list<string> */
     public static function all(): array
     {
@@ -44,6 +46,7 @@ final class Permissions
             self::CHAIN_MANAGE,
             self::LOGS_VIEW,
             self::SETTINGS_MANAGE,
+            self::ANNOUNCEMENTS_MANAGE,
         ];
     }
 
@@ -63,6 +66,7 @@ final class Permissions
                 self::VIOLATIONS_MANAGE,
                 self::PROGRESS_MANAGE,
                 self::BATCHES_VIEW,
+                self::ANNOUNCEMENTS_MANAGE,
             ],
             Role::Instructor->value => [
                 self::GRADES_VIEW_ALL,

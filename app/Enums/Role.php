@@ -25,4 +25,9 @@ enum Role: string
     {
         return $this !== self::Trainee;
     }
+
+    public function canManageAnnouncements(): bool
+    {
+        return in_array($this, [self::Admin, self::HeadInstructor], true);
+    }
 }
