@@ -1,4 +1,4 @@
-import { Head, Link, usePage } from '@inertiajs/react';
+import { Head, Link, usePage, usePoll } from '@inertiajs/react';
 import {
     ArrowRight,
     Award,
@@ -12,14 +12,17 @@ import {
     Megaphone,
     Menu,
     MessageCircle,
+    Moon,
     Package,
     ShieldCheck,
     Stethoscope,
     Star,
+    Sun,
     Target,
     X,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
+import { useAppearance } from '@/hooks/use-appearance';
 import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
@@ -126,6 +129,32 @@ const navLinks = [
 
 const card = 'bg-card rounded-2xl border shadow-xs';
 
+function ThemeToggle({ className }: { className?: string }) {
+    const { updateAppearance } = useAppearance();
+
+    return (
+        <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            aria-label="Toggle dark mode"
+            title="Toggle dark mode"
+            onClick={() =>
+                updateAppearance(
+                    document.documentElement.classList.contains('dark')
+                        ? 'light'
+                        : 'dark',
+                )
+            }
+            className={cn('rounded-xl', className)}
+        >
+            {/* Icon is chosen by CSS, so SSR and client markup always match. */}
+            <Sun aria-hidden="true" className="hidden dark:block" />
+            <Moon aria-hidden="true" className="dark:hidden" />
+        </Button>
+    );
+}
+
 function IconChip({
     icon: Icon,
     tone,
@@ -179,6 +208,8 @@ export default function Welcome({
     const { auth } = usePage().props;
     const [menuOpen, setMenuOpen] = useState(false);
     const [slide, setSlide] = useState(0);
+    
+    usePoll(3000, { only: ['intake', 'announcements'] });
 
     const portalHref = auth.user ? dashboard() : login();
     const portalLabel = auth.user ? 'Go to dashboard' : 'Access AMS Portal';
@@ -245,18 +276,22 @@ export default function Welcome({
                             >
                                 <Link href={portalHref}>{portalLabel}</Link>
                             </Button>
+                            <ThemeToggle />
                         </nav>
 
-                        <Button
-                            type="button"
-                            variant="ghost"
-                            size="icon"
-                            aria-label="Toggle menu"
-                            onClick={() => setMenuOpen((o) => !o)}
-                            className="rounded-xl md:hidden"
-                        >
-                            {menuOpen ? <X /> : <Menu />}
-                        </Button>
+                        <div className="flex items-center gap-1 md:hidden">
+                            <ThemeToggle />
+                            <Button
+                                type="button"
+                                variant="ghost"
+                                size="icon"
+                                aria-label="Toggle menu"
+                                onClick={() => setMenuOpen((o) => !o)}
+                                className="rounded-xl"
+                            >
+                                {menuOpen ? <X /> : <Menu />}
+                            </Button>
+                        </div>
                     </div>
 
                     {menuOpen && (
