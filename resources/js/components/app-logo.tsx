@@ -1,18 +1,16 @@
-import { usePage } from '@inertiajs/react';
-
-import AppLogoIcon from '@/components/app-logo-icon';
+import amsLogo from '../../images/ams-logo.png';
 
 export default function AppLogo() {
-    const { name } = usePage().props;
-
     return (
         <>
-            <div className="flex aspect-square size-9 items-center justify-center rounded-xl bg-sky-500 text-white">
-                <AppLogoIcon className="size-5 fill-current text-white" />
-            </div>
+            <img
+                src={amsLogo}
+                alt="AMS logo"
+                className="size-9 shrink-0 object-contain"
+            />
             <div className="ml-1 grid flex-1 text-left text-sm">
                 <span className="truncate text-base leading-tight font-semibold tracking-tight">
-                    {name}
+                    Army Medical School
                 </span>
             </div>
         </>
