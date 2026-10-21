@@ -6,7 +6,7 @@ import { usePoll } from '@inertiajs/react';
  */
 export function LiveGrades({
     only,
-    interval = 5000,
+    interval = 3000,
 }: {
     only: string[];
     interval?: number;
