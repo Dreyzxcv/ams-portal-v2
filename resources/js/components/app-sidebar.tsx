@@ -53,18 +53,18 @@ const sections: PermittedSection[] = [
     {
         label: 'Academics',
         items: [
+            {
+                title: 'Batches',
+                href: batchesIndex(),
+                icon: Layers,
+                permission: 'batches.view',
+            },
             { title: 'Grades', href: gradesIndex(), icon: GraduationCap },
             {
                 title: 'Progress',
                 href: progressIndex(),
                 icon: TrendingUp,
                 permission: 'progress.manage',
-            },
-            {
-                title: 'Batches',
-                href: batchesIndex(),
-                icon: Layers,
-                permission: 'batches.view',
             },
         ],
     },
@@ -78,22 +78,22 @@ const sections: PermittedSection[] = [
         label: 'Administration',
         items: [
             {
-                title: 'Users',
-                href: usersIndex(),
-                icon: Users,
-                permission: 'users.manage',
-            },
-            {
                 title: 'Announcements',
                 href: announcementsIndex(),
                 icon: Megaphone,
                 permission: 'announcements.manage',
             },
             {
-                title: 'Intake',
+                title: 'Recruitment',
                 href: intakeEdit(),
                 icon: DoorOpen,
                 permission: 'settings.manage',
+            },
+            {
+                title: 'Users',
+                href: usersIndex(),
+                icon: Users,
+                permission: 'users.manage',
             },
         ],
     },
