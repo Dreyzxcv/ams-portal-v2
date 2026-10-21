@@ -8,12 +8,10 @@ import type { IntakeBanner, IntakeStatusValue } from '@/types/intake';
 
 type Props = {
     setting: {
-        batch_id: number | null;
         status: IntakeStatusValue;
         updated_at: string | null;
         updated_by: string | null;
     };
-    batches: { id: number; name: string; label: string }[];
     statuses: { value: IntakeStatusValue; label: string }[];
     banner: IntakeBanner | null;
 };
@@ -21,7 +19,7 @@ type Props = {
 const selectClass =
     'border-input bg-background h-9 w-full rounded-xl border px-3 text-sm shadow-xs outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50';
 
-export default function IntakeEdit({ setting, batches, statuses, banner }: Props) {
+export default function IntakeEdit({ setting, statuses, banner }: Props) {
     return (
         <>
             <Head title="Applicant intake" />
@@ -49,7 +47,7 @@ export default function IntakeEdit({ setting, batches, statuses, banner }: Props
                         Currently shown on the welcome page
                     </p>
                     <p className="mb-6 text-sm font-medium">
-                        {banner?.message ?? 'Nothing yet. Choose a batch and save.'}
+                        {banner?.message ?? 'Nothing yet. Choose a status and save.'}
                     </p>
 
                     <Form
@@ -59,27 +57,6 @@ export default function IntakeEdit({ setting, batches, statuses, banner }: Props
                     >
                         {({ processing, errors }) => (
                             <>
-                                <div className="grid gap-2">
-                                    <Label htmlFor="batch_id">Current batch</Label>
-                                    <select
-                                        id="batch_id"
-                                        name="batch_id"
-                                        required
-                                        defaultValue={setting.batch_id ?? ''}
-                                        className={selectClass}
-                                    >
-                                        <option value="" disabled>
-                                            Select a batch
-                                        </option>
-                                        {batches.map((b) => (
-                                            <option key={b.id} value={b.id}>
-                                                {b.name}
-                                            </option>
-                                        ))}
-                                    </select>
-                                    <InputError message={errors.batch_id} />
-                                </div>
-
                                 <div className="grid gap-2">
                                     <Label htmlFor="status">Intake status</Label>
                                     <select

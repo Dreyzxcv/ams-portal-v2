@@ -18,16 +18,7 @@ class UpdateIntakeRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'batch_id' => ['required', 'integer', Rule::exists('batches', 'id')->whereNull('deleted_at')],
             'status' => ['required', Rule::enum(IntakeStatus::class)],
-        ];
-    }
-
-    /** @return array<string, string> */
-    public function messages(): array
-    {
-        return [
-            'batch_id.exists' => 'Choose an existing batch.',
         ];
     }
 }

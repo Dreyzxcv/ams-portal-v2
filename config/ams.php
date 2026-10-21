@@ -19,8 +19,8 @@ return [
     ],
     'intake' => [
         'messages' => [
-            'open' => 'Now accepting Batch :batch applicants.',
-            'closed' => 'Batch :batch is currently ongoing.',
+            'open' => 'Recruitment is now open.',
+            'closed' => 'Recruitment is now closed. A batch is currently ongoing.',
         ],
     ],
 ];
