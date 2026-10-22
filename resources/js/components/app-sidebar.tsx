@@ -1,5 +1,6 @@
 import { Link } from '@inertiajs/react';
 import {
+    Award,
     DoorOpen,
     GraduationCap,
     Layers,
@@ -31,6 +32,7 @@ import { edit as intakeEdit } from '@/routes/intake';
 import { index as progressIndex } from '@/routes/progress';
 import { index as usersIndex } from '@/routes/users';
 import { index as violationsIndex } from '@/routes/violations';
+import { index as certificatesIndex } from '@/routes/certificates';
 import type { NavItem } from '@/types';
 
 type PermittedNavItem = NavItem & {
@@ -82,6 +84,12 @@ const sections: PermittedSection[] = [
                 href: announcementsIndex(),
                 icon: Megaphone,
                 permission: 'announcements.manage',
+            },
+            {
+                title: 'Certificates',
+                href: certificatesIndex(),
+                icon: Award,
+                permission: 'certificates.manage',
             },
             {
                 title: 'Recruitment',

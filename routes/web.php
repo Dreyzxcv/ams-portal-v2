@@ -18,4 +18,5 @@ require __DIR__.'/batches.php';
 require __DIR__.'/grades.php';
 require __DIR__.'/violations.php';
 require __DIR__.'/progress.php';
+require __DIR__.'/certificates.php';
 require __DIR__.'/otp.php';

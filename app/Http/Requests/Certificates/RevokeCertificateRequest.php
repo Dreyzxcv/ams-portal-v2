@@ -1,0 +1,19 @@
+<?php
+
+namespace App\Http\Requests\Certificates;
+
+use Illuminate\Foundation\Http\FormRequest;
+
+class RevokeCertificateRequest extends FormRequest
+{
+    public function authorize(): bool
+    {
+        return $this->user()?->can('update', $this->route('certificate')) ?? false;
+    }
+
+    /** @return array<string, mixed> */
+    public function rules(): array
+    {
+        return ['reason' => ['nullable', 'string', 'max:500']];
+    }
+}
