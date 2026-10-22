@@ -227,7 +227,6 @@ export default function QuizReview({ quiz, trainee, attempt, answers }: Props) {
                     >
                         {({ processing, errors }) => (
                             <>
-                                <input type="hidden" name="answers" value="" />
                                 <div>
                                     <p className="font-medium">
                                         No paragraph answers to grade
