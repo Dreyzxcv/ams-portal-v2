@@ -37,6 +37,7 @@ import type {
     Trend,
 } from '@/types/dashboard';
 import CertificateController from '@/actions/App/Http/Controllers/Certificates/CertificateController';
+import FilePreview from '@/components/file-preview';
 import { Button } from '@/components/ui/button';
 
 type Props = {
@@ -650,54 +651,61 @@ function TraineeView({ trainee }: { trainee: TraineeSummary }) {
             </div>
 
             <Panel title="Certificate status" icon={Award}>
-                <div className="flex items-center gap-4 px-5 pt-1 pb-5">
-                    <IconChip
-                        icon={issued ? CircleCheck : Award}
-                        tone={issued ? 'emerald' : 'muted'}
-                        className="size-12 [&>svg]:size-6"
-                    />
-                    {issued ? (
-                        <div className="min-w-0">
-                            <p className="text-base font-semibold text-emerald-600 dark:text-emerald-400">
-                                Certificate issued
-                            </p>
-                            <p className="text-muted-foreground text-xs">
-                                ID: {trainee.certificate_number}
-                            </p>
-                            {trainee.certificate_issued_at && (
-                                <p className="text-muted-foreground text-xs">
-                                    Issued: {trainee.certificate_issued_at}
+                <div className="space-y-4 px-5 pt-1 pb-5">
+                    <div className="flex items-center gap-4">
+                        <IconChip
+                            icon={issued ? CircleCheck : Award}
+                            tone={issued ? 'emerald' : 'muted'}
+                            className="size-12 [&>svg]:size-6"
+                        />
+                        {issued ? (
+                            <div className="min-w-0">
+                                <p className="text-base font-semibold text-emerald-600 dark:text-emerald-400">
+                                    Certificate issued
                                 </p>
-                            )}
-                            {trainee.certificate_id && (
-                                <div className="mt-3 flex gap-2">
-                                    <Button asChild size="sm" variant="outline" className="rounded-xl">
-                                        <a
-                                            href={CertificateController.preview.url(trainee.certificate_id)}
-                                            target="_blank"
-                                            rel="noreferrer"
-                                        >
-                                            View
-                                        </a>
-                                    </Button>
-                                    <Button asChild size="sm" className="rounded-xl">
-                                        <a href={CertificateController.download.url(trainee.certificate_id)}>
-                                            Download
-                                        </a>
-                                    </Button>
-                                </div>
-                            )}
-                        </div>
-                    ) : (
-                        <div>
-                            <p className="text-sm font-semibold">
-                                Not issued yet
-                            </p>
-                            <p className="text-muted-foreground text-xs">
-                                Your certificate will appear here once it is
-                                issued.
-                            </p>
-                        </div>
+                                <p className="text-muted-foreground text-xs">
+                                    ID: {trainee.certificate_number}
+                                </p>
+                                {trainee.certificate_issued_at && (
+                                    <p className="text-muted-foreground text-xs">
+                                        Issued: {trainee.certificate_issued_at}
+                                    </p>
+                                )}
+                            </div>
+                        ) : (
+                            <div>
+                                <p className="text-sm font-semibold">Not issued yet</p>
+                                <p className="text-muted-foreground text-xs">
+                                    Your certificate will appear here once it is issued.
+                                </p>
+                            </div>
+                        )}
+                    </div>
+
+                    {issued && trainee.certificate_id && (
+                        <>
+                            <FilePreview
+                                src={CertificateController.preview.url(trainee.certificate_id)}
+                                mime={trainee.certificate_mime}
+                                title={`Certificate ${trainee.certificate_number ?? ''}`}
+                            />
+                            <div className="flex gap-2">
+                                <Button asChild size="sm" variant="outline" className="rounded-xl">
+                                    <a
+                                        href={CertificateController.preview.url(trainee.certificate_id)}
+                                        target="_blank"
+                                        rel="noreferrer"
+                                    >
+                                        Open in new tab
+                                    </a>
+                                </Button>
+                                <Button asChild size="sm" className="rounded-xl">
+                                    <a href={CertificateController.download.url(trainee.certificate_id)}>
+                                        Download
+                                    </a>
+                                </Button>
+                            </div>
+                        </>
                     )}
                 </div>
             </Panel>

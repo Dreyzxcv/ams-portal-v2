@@ -32,6 +32,7 @@ export type TraineeSummary = {
     grades_passed: number;
     violations: number;
     certificate_id: number | null;
+    certificate_mime: string | null;
     certificate_number: string | null;
     certificate_issued_at: string | null;
     remaining_days: number | null;

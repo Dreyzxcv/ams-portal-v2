@@ -165,6 +165,7 @@ class DashboardService
         })->count();
 
         $certificate = Certificate::query()
+            ->with('file:id,mime_type')
             ->where('trainee_id', $user->id)
             ->where('status', CertificateStatus::Issued->value)
             ->first();
@@ -193,6 +194,7 @@ class DashboardService
                 'grades_passed' => $passed,
                 'violations' => Violation::where('trainee_id', $user->id)->count(),
                 'certificate_id' => $certificate?->id,
+                'certificate_mime' => $certificate?->file?->mime_type,
                 'certificate_number' => $certificate?->certificate_number,
                 'certificate_issued_at' => $certificate?->issued_at?->toDateString(),
                 'remaining_days' => ProgramSchedule::remainingDays($progress?->started_on),
