@@ -17,8 +17,11 @@ class WelcomeController extends Controller
             ->map->toPublicArray();
 
         return Inertia::render('welcome', [
-            'intake' => $intake->banner(),
-            'announcements' => $announcements,
+            'intake' => fn () => $intake->banner(),
+            'announcements' => fn () => Announcement::forPublicDisplay()
+                ->limit(3)
+                ->get()
+                ->map->toPublicArray(),
         ]);
     }
 }
