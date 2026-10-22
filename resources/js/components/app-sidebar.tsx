@@ -1,6 +1,7 @@
 import { Link } from '@inertiajs/react';
 import {
     Award,
+    ClipboardList,
     DoorOpen,
     GraduationCap,
     Layers,
@@ -28,6 +29,7 @@ import { dashboard } from '@/routes';
 import { index as announcementsIndex } from '@/routes/announcements';
 import { index as batchesIndex } from '@/routes/batches';
 import { index as gradesIndex } from '@/routes/grades';
+import { index as quizzesIndex } from '@/routes/quizzes';
 import { edit as intakeEdit } from '@/routes/intake';
 import { index as progressIndex } from '@/routes/progress';
 import { index as usersIndex } from '@/routes/users';
@@ -38,6 +40,8 @@ import type { NavItem } from '@/types';
 type PermittedNavItem = NavItem & {
     /** Item is shown only to users holding this permission. Omit for items everyone sees. */
     permission?: string;
+    /** Item is shown only to these role values. */
+    roles?: string[];
 };
 
 type PermittedSection = {
@@ -48,9 +52,7 @@ type PermittedSection = {
 const sections: PermittedSection[] = [
     {
         label: 'Overview',
-        items: [
-            { title: 'Dashboard', href: dashboard(), icon: LayoutGrid },
-        ],
+        items: [{ title: 'Dashboard', href: dashboard(), icon: LayoutGrid }],
     },
     {
         label: 'Academics',
@@ -62,6 +64,13 @@ const sections: PermittedSection[] = [
                 permission: 'batches.view',
             },
             { title: 'Grades', href: gradesIndex(), icon: GraduationCap },
+            {
+                title: 'Quizzes',
+                href: quizzesIndex(),
+                icon: ClipboardList,
+                permission: 'quizzes.manage',
+                roles: ['trainee'],
+            },
             {
                 title: 'Progress',
                 href: progressIndex(),
@@ -108,14 +117,26 @@ const sections: PermittedSection[] = [
 ];
 
 export function AppSidebar() {
-    const { can } = usePermissions();
+    const { can, role } = usePermissions();
 
     const visibleSections: NavSection[] = sections
         .map((section) => ({
             label: section.label,
-            items: section.items.filter(
-                (item) => item.permission === undefined || can(item.permission),
-            ),
+            items: section.items.filter((item) => {
+                if (item.permission && item.roles) {
+                    return (
+                        can(item.permission) || item.roles.includes(role ?? '')
+                    );
+                }
+
+                if (item.permission) {
+                    return can(item.permission);
+                }
+
+                return (
+                    item.roles === undefined || item.roles.includes(role ?? '')
+                );
+            }),
         }))
         .filter((section) => section.items.length > 0);
 
@@ -127,7 +148,7 @@ export function AppSidebar() {
                         <SidebarMenuButton
                             size="lg"
                             asChild
-                            className="hover:bg-sidebar-accent rounded-xl"
+                            className="rounded-xl hover:bg-sidebar-accent"
                         >
                             <Link href={dashboard()} prefetch>
                                 <AppLogo />

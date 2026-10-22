@@ -61,6 +61,7 @@ class User extends Authenticatable
     }
 
     /** Usernames are stored lowercase; the database also enforces case-insensitive uniqueness. */
+    /** @return Attribute<string|null, string|null> */
     protected function username(): Attribute
     {
         return Attribute::make(
@@ -68,6 +69,7 @@ class User extends Authenticatable
         );
     }
 
+    /** @return Attribute<string|null, string|null> */
     protected function email(): Attribute
     {
         return Attribute::make(
@@ -95,41 +97,61 @@ class User extends Authenticatable
         return $this->status === UserStatus::Active;
     }
 
+    /** @return HasOne<TraineeProfile, $this> */
     public function traineeProfile(): HasOne
     {
         return $this->hasOne(TraineeProfile::class);
     }
 
+    /** @return HasMany<BatchAssignment, $this> */
     public function batchAssignments(): HasMany
     {
         return $this->hasMany(BatchAssignment::class);
     }
 
+    /** @return HasOne<BatchAssignment, $this> */
     public function activeBatchAssignment(): HasOne
     {
         return $this->hasOne(BatchAssignment::class)->whereNull('unassigned_at');
     }
 
+    /** @return HasMany<GradeRecord, $this> */
     public function gradeRecords(): HasMany
     {
         return $this->hasMany(GradeRecord::class, 'trainee_id');
     }
 
+    /** @return HasMany<QuizAccess, $this> */
+    public function quizAccesses(): HasMany
+    {
+        return $this->hasMany(QuizAccess::class, 'trainee_id');
+    }
+
+    /** @return HasMany<QuizAttempt, $this> */
+    public function quizAttempts(): HasMany
+    {
+        return $this->hasMany(QuizAttempt::class, 'trainee_id');
+    }
+
+    /** @return HasMany<Violation, $this> */
     public function violations(): HasMany
     {
         return $this->hasMany(Violation::class, 'trainee_id');
     }
 
+    /** @return HasOne<Certificate, $this> */
     public function certificate(): HasOne
     {
         return $this->hasOne(Certificate::class, 'trainee_id');
     }
 
+    /** @return HasOne<TraineeProgress, $this> */
     public function progress(): HasOne
     {
         return $this->hasOne(TraineeProgress::class, 'trainee_id');
     }
 
+    /** @return HasMany<TrustedDevice, $this> */
     public function trustedDevices(): HasMany
     {
         return $this->hasMany(TrustedDevice::class);

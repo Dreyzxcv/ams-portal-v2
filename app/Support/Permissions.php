@@ -13,6 +13,8 @@ final class Permissions
 
     public const GRADES_MANAGE = 'grades.manage';
 
+    public const QUIZZES_MANAGE = 'quizzes.manage';
+
     public const VIOLATIONS_MANAGE = 'violations.manage';
 
     public const PROGRESS_MANAGE = 'progress.manage';
@@ -38,6 +40,7 @@ final class Permissions
             self::USERS_MANAGE,
             self::GRADES_VIEW_ALL,
             self::GRADES_MANAGE,
+            self::QUIZZES_MANAGE,
             self::VIOLATIONS_MANAGE,
             self::PROGRESS_MANAGE,
             self::BATCHES_VIEW,
@@ -63,6 +66,7 @@ final class Permissions
             Role::HeadInstructor->value => [
                 self::GRADES_VIEW_ALL,
                 self::GRADES_MANAGE,
+                self::QUIZZES_MANAGE,
                 self::VIOLATIONS_MANAGE,
                 self::PROGRESS_MANAGE,
                 self::BATCHES_VIEW,

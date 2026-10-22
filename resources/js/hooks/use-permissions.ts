@@ -1,7 +1,10 @@
 import { usePage } from '@inertiajs/react';
 
 type SharedPermissions = {
-    auth: { permissions?: string[] };
+    auth: {
+        permissions?: string[];
+        user?: { role?: string | null };
+    };
 };
 
 export function usePermissions() {
@@ -9,6 +12,7 @@ export function usePermissions() {
     const granted = auth.permissions ?? [];
 
     return {
+        role: auth.user?.role ?? null,
         can: (permission: string): boolean => granted.includes(permission),
     };
 }

@@ -29,10 +29,11 @@ it('grants each role exactly the documented permissions', function (string $role
     'admin' => ['admin', [
         'users.manage', 'grades.view_all', 'grades.manage', 'violations.manage',
         'progress.manage', 'batches.view', 'batches.manage', 'certificates.manage',
-        'chain.manage', 'logs.view', 'settings.manage',
+        'chain.manage', 'logs.view', 'settings.manage', 'announcements.manage', 'quizzes.manage',
     ]],
     'head instructor' => ['head_instructor', [
-        'grades.view_all', 'grades.manage', 'violations.manage', 'progress.manage', 'batches.view',
+        'grades.view_all', 'grades.manage', 'quizzes.manage', 'violations.manage',
+        'progress.manage', 'batches.view', 'announcements.manage',
     ]],
     'instructor' => ['instructor', ['grades.view_all', 'grades.manage', 'batches.view']],
     'logistic officer' => ['logistic_officer', ['grades.view_all', 'violations.manage', 'progress.manage']],
