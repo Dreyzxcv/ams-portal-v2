@@ -9,5 +9,6 @@ export type CertificateRow = {
         number: string | null;
         issued_at: string | null;
         has_file: boolean;
+        mime: string | null;
     } | null;
 };

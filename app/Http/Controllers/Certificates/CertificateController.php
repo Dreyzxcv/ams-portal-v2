@@ -16,6 +16,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
 use Inertia\Inertia;
 use Inertia\Response;
+use Symfony\Component\HttpFoundation\HeaderUtils;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 use Throwable;
 
@@ -31,7 +32,7 @@ class CertificateController extends Controller
 
         $trainees = User::query()
             ->where('role', Role::Trainee->value)
-            ->with('certificate')
+            ->with('certificate.file')
             ->when($search !== '', function ($query) use ($search) {
                 $term = '%'.addcslashes(mb_strtolower($search), '%_\\').'%';
                 $query->where(function ($q) use ($term) {
@@ -54,6 +55,7 @@ class CertificateController extends Controller
                     'number' => $t->certificate->certificate_number,
                     'issued_at' => $t->certificate->issued_at?->toIso8601String(),
                     'has_file' => $t->certificate->file_id !== null,
+                    'mime' => $t->certificate->file?->mime_type,
                 ],
             ]);
 
@@ -72,6 +74,42 @@ class CertificateController extends Controller
         Inertia::flash('toast', ['type' => 'success', 'message' => __('Certificate issued.')]);
 
         return to_route('certificates.index');
+    }
+
+    public function preview(
+        Request $request,
+        Certificate $certificate,
+        CertificateStorage $storage,
+        AuditLogger $audit,
+    ): StreamedResponse {
+        Gate::authorize('download', $certificate);
+
+        $certificate->loadMissing('file');
+        abort_if($certificate->file === null, 404);
+
+        $audit->record('certificate.previewed', $request->user(), 'certificate', $certificate->id);
+
+        try {
+            $response = $storage->download($certificate->file);
+        } catch (Throwable $e) {
+            report($e);
+
+            abort(502, 'The certificate file is temporarily unavailable.');
+        }
+
+        $ext = match ($certificate->file->mime_type) {
+            'image/jpeg' => 'jpg',
+            'image/png' => 'png',
+            'image/webp' => 'webp',
+            default => 'pdf',
+        };
+
+        $response->headers->set(
+            'Content-Disposition',
+            HeaderUtils::makeDisposition(HeaderUtils::DISPOSITION_INLINE, "certificate.{$ext}"),
+        );
+
+        return $response;
     }
 
     public function revoke(RevokeCertificateRequest $request, Certificate $certificate): RedirectResponse

@@ -15,4 +15,8 @@ Route::middleware(['auth'])->prefix('certificates')->name('certificates.')->grou
     Route::get('{certificate}/download', [CertificateController::class, 'download'])
         ->middleware('throttle:30,1')
         ->name('download');
+
+    Route::get('{certificate}/preview', [CertificateController::class, 'preview'])
+        ->middleware('throttle:60,1')
+        ->name('preview');
 });

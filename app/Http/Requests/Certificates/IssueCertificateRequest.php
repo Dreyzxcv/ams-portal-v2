@@ -16,7 +16,12 @@ class IssueCertificateRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'file' => ['required', 'file', 'mimes:pdf', 'mimetypes:application/pdf', 'max:5120'],
+            'file' => [
+                'required', 'file',
+                'mimes:pdf,jpg,jpeg,png,webp',
+                'mimetypes:application/pdf,image/jpeg,image/png,image/webp',
+                'max:5120',
+            ],
         ];
     }
 
@@ -24,8 +29,8 @@ class IssueCertificateRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'file.mimes' => 'The certificate must be a PDF file.',
-            'file.mimetypes' => 'The certificate must be a PDF file.',
+            'file.mimes' => 'The certificate must be a PDF, JPG, PNG or WebP file.',
+            'file.mimetypes' => 'The certificate must be a PDF, JPG, PNG or WebP file.',
             'file.max' => 'The certificate must be 5 MB or smaller.',
         ];
     }

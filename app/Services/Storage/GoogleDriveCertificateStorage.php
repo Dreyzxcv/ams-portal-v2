@@ -16,18 +16,25 @@ class GoogleDriveCertificateStorage implements CertificateStorage
 {
     public const DISK = 'google';
 
+    private const ALLOWED = [
+        'application/pdf' => 'pdf',
+        'image/jpeg' => 'jpg',
+        'image/png' => 'png',
+        'image/webp' => 'webp',
+    ];
+
     private const MAX_BYTES = 5 * 1024 * 1024;
 
     private ?Drive $drive = null;
 
     public function store(UploadedFile $file, ?int $uploadedBy): StoredFile
     {
-        $this->assertAllowed($file);
+        $mime = $this->assertAllowed($file);
 
         $contents = (string) file_get_contents($file->getRealPath());
 
         // App-generated name; the user's filename is kept only as metadata.
-        $driveName = (string) Str::uuid().'.pdf';
+        $driveName = (string) Str::uuid().'.'.self::ALLOWED[$mime];
 
         $meta = new DriveFile([
             'name' => $driveName,
@@ -36,7 +43,7 @@ class GoogleDriveCertificateStorage implements CertificateStorage
 
         $created = $this->drive()->files->create($meta, [
             'data' => $contents,
-            'mimeType' => 'application/pdf',
+            'mimeType' => $mime,
             'uploadType' => 'multipart',
             'fields' => 'id',
             'supportsAllDrives' => true,
@@ -46,7 +53,7 @@ class GoogleDriveCertificateStorage implements CertificateStorage
             'disk' => self::DISK,
             'path' => $created->id,
             'original_name' => Str::limit(basename($file->getClientOriginalName()), 255, ''),
-            'mime_type' => 'application/pdf',
+            'mime_type' => $mime,
             'size_bytes' => strlen($contents),
             'sha256' => hash('sha256', $contents),
             'uploaded_by' => $uploadedBy,
@@ -63,14 +70,14 @@ class GoogleDriveCertificateStorage implements CertificateStorage
         ]);
 
         $stream = $response->getBody();
-        $name = Str::ascii($file->original_name) ?: 'certificate.pdf';
+        $name = Str::ascii($file->original_name) ?: 'certificate';
 
         return response()->streamDownload(function () use ($stream) {
             while (! $stream->eof()) {
                 echo $stream->read(8192);
             }
         }, $name, [
-            'Content-Type' => 'application/pdf',
+            'Content-Type' => $file->mime_type,
             'X-Content-Type-Options' => 'nosniff',
             'Cache-Control' => 'private, no-store',
         ]);
@@ -83,17 +90,25 @@ class GoogleDriveCertificateStorage implements CertificateStorage
         $this->drive()->files->delete($file->path, ['supportsAllDrives' => true]);
     }
 
-    private function assertAllowed(UploadedFile $file): void
+    private function assertAllowed(UploadedFile $file): string
     {
         if (! $file->isValid() || $file->getSize() > self::MAX_BYTES) {
             throw new RuntimeException('Invalid or oversized upload.');
         }
 
-        // Check real content, not the client-supplied type or extension.
-        if ($file->getMimeType() !== 'application/pdf'
-            || ! str_starts_with((string) file_get_contents($file->getRealPath(), false, null, 0, 5), '%PDF-')) {
-            throw new RuntimeException('Only PDF files are allowed.');
+        // Detected from the real content, not the client-supplied type or extension.
+        $mime = (string) $file->getMimeType();
+
+        if (! isset(self::ALLOWED[$mime])) {
+            throw new RuntimeException('Only PDF, JPG, PNG or WebP files are allowed.');
         }
+
+        if ($mime === 'application/pdf'
+            && ! str_starts_with((string) file_get_contents($file->getRealPath(), false, null, 0, 5), '%PDF-')) {
+            throw new RuntimeException('Only PDF, JPG, PNG or WebP files are allowed.');
+        }
+
+        return $mime;
     }
 
     private function assertOwnDisk(StoredFile $file): void
