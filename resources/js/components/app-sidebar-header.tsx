@@ -1,4 +1,5 @@
 import { Breadcrumbs } from '@/components/breadcrumbs';
+import ThemeToggle from '@/components/theme-toggle';
 import { SidebarTrigger } from '@/components/ui/sidebar';
 import type { BreadcrumbItem as BreadcrumbItemType } from '@/types';
 
@@ -12,6 +13,7 @@ export function AppSidebarHeader({
             <SidebarTrigger className="hover:bg-muted -ml-1.5 size-8 rounded-lg" />
             <div aria-hidden="true" className="bg-border h-4 w-px" />
             <Breadcrumbs breadcrumbs={breadcrumbs} />
+            <ThemeToggle className="ml-auto size-8" />
         </header>
     );
 }

@@ -33,6 +33,7 @@ import type { IntakeBanner } from '@/types/intake';
 import AnnouncementCard from '@/components/announcement-card';
 import type { PublicAnnouncement } from '@/types/announcement';
 import { archive } from '@/routes/announcements';
+import ThemeToggle from '@/components/theme-toggle';
 
 // Hero image. Swap the file at resources/images/landing-page-1.png anytime.
 const HERO_IMAGE: string | null = heroImage;
@@ -128,32 +129,6 @@ const navLinks = [
 ];
 
 const card = 'bg-card rounded-2xl border shadow-xs';
-
-function ThemeToggle({ className }: { className?: string }) {
-    const { updateAppearance } = useAppearance();
-
-    return (
-        <Button
-            type="button"
-            variant="ghost"
-            size="icon"
-            aria-label="Toggle dark mode"
-            title="Toggle dark mode"
-            onClick={() =>
-                updateAppearance(
-                    document.documentElement.classList.contains('dark')
-                        ? 'light'
-                        : 'dark',
-                )
-            }
-            className={cn('rounded-xl', className)}
-        >
-            {/* Icon is chosen by CSS, so SSR and client markup always match. */}
-            <Sun aria-hidden="true" className="hidden dark:block" />
-            <Moon aria-hidden="true" className="dark:hidden" />
-        </Button>
-    );
-}
 
 function IconChip({
     icon: Icon,
