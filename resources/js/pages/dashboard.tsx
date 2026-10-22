@@ -36,6 +36,8 @@ import type {
     TraineeSummary,
     Trend,
 } from '@/types/dashboard';
+import CertificateController from '@/actions/App/Http/Controllers/Certificates/CertificateController';
+import { Button } from '@/components/ui/button';
 
 type Props = {
     mode: 'staff' | 'trainee';
@@ -666,6 +668,24 @@ function TraineeView({ trainee }: { trainee: TraineeSummary }) {
                                 <p className="text-muted-foreground text-xs">
                                     Issued: {trainee.certificate_issued_at}
                                 </p>
+                            )}
+                            {trainee.certificate_id && (
+                                <div className="mt-3 flex gap-2">
+                                    <Button asChild size="sm" variant="outline" className="rounded-xl">
+                                        <a
+                                            href={CertificateController.preview.url(trainee.certificate_id)}
+                                            target="_blank"
+                                            rel="noreferrer"
+                                        >
+                                            View
+                                        </a>
+                                    </Button>
+                                    <Button asChild size="sm" className="rounded-xl">
+                                        <a href={CertificateController.download.url(trainee.certificate_id)}>
+                                            Download
+                                        </a>
+                                    </Button>
+                                </div>
                             )}
                         </div>
                     ) : (

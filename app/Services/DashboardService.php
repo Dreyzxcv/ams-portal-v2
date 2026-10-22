@@ -192,6 +192,7 @@ class DashboardService
                 'grades_entered' => $entered,
                 'grades_passed' => $passed,
                 'violations' => Violation::where('trainee_id', $user->id)->count(),
+                'certificate_id' => $certificate?->id,
                 'certificate_number' => $certificate?->certificate_number,
                 'certificate_issued_at' => $certificate?->issued_at?->toDateString(),
                 'remaining_days' => ProgramSchedule::remainingDays($progress?->started_on),
