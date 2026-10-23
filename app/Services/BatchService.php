@@ -49,6 +49,9 @@ class BatchService
             $batch->save();
 
             $this->audit->record('batch.updated', $actor, 'batch', $batch->id, ['fields' => $changed]);
+
+            $batch->activeAssignments()->pluck('user_id')
+                ->each(fn ($id) => BatchAssignmentChanged::dispatch((int) $id));
         });
     }
 

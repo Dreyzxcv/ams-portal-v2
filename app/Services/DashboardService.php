@@ -184,7 +184,7 @@ class DashboardService
             'trainee' => [
                 'batch' => $batch?->name,
                 'current_phase' => $progress?->current_phase,
-                'started_on' => $progress?->started_on?->toDateString(),
+                'started_on' => $batch?->starts_on?->toDateString() ?? $progress?->started_on?->toDateString(),
                 'components' => $components->sortBy('id')->map(function ($c) use ($records) {
                     $score = $records->get($c->id)?->score;
 
