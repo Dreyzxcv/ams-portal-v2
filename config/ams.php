@@ -7,6 +7,8 @@ return [
         'ttl_minutes' => 5,
         'max_attempts' => 5,
         'resend_seconds' => 60,
+        'max_resend_seconds' => 900,
+        'escalation_window_minutes' => 60,
         'pending_minutes' => 15,
         'trusted_device_days' => 30,
         'max_trusted_devices' => 10,

@@ -9,15 +9,17 @@ import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
 import { Spinner } from '@/components/ui/spinner';
+import { formatCountdown, useResendCooldown } from '@/hooks/use-resend-cooldown';
 
 type Props = {
     email: string;
     status?: string;
+    resend_available_in: number;
 };
 
-export default function OtpChallenge({ email, status }: Props) {
-    // Bumping the key remounts the boxes, which clears them after a wrong code.
+export default function OtpChallenge({ email, status, resend_available_in }: Props) {
     const [attempt, setAttempt] = useState(0);
+    const cooldown = useResendCooldown(resend_available_in);
 
     return (
         <>
@@ -88,14 +90,15 @@ export default function OtpChallenge({ email, status }: Props) {
                 )}
             </Form>
 
-            <Form
-                {...OtpChallengeController.resend.form()}
-                className="mt-2 text-center"
-            >
-                {({ processing }) => (
-                    <Button type="submit" variant="link" disabled={processing}>
-                        Send a new code
-                    </Button>
+            <Form {...OtpChallengeController.resend.form()} className="mt-2 text-center">
+                {({ processing, errors }) => (
+                    <>
+                        <Button type="submit" variant="link" disabled={processing || cooldown > 0}>
+                            {cooldown > 0
+                                ? `Send a new code in ${formatCountdown(cooldown)}`
+                                : 'Send a new code'}
+                        </Button>
+                    </>
                 )}
             </Form>
 

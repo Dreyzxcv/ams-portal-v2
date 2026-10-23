@@ -19,7 +19,7 @@ class OtpChallengeController extends Controller
 {
     public const SESSION_KEY = 'otp_pending';
 
-    public function show(Request $request): Response|RedirectResponse
+    public function show(Request $request, OtpService $otp)
     {
         $user = $this->pendingUser($request);
 
@@ -29,6 +29,7 @@ class OtpChallengeController extends Controller
 
         return Inertia::render('auth/otp-challenge', [
             'email' => $this->mask((string) $user->email),
+            'resend_available_at' => now()->addSeconds($otp->cooldownSeconds($user, OtpPurpose::Login))->getTimestamp(),
             'status' => $request->session()->get('status'),
         ]);
     }
@@ -87,7 +88,13 @@ class OtpChallengeController extends Controller
             return back()->withErrors(['code' => __('We could not send the code. Try again shortly.')]);
         }
 
-        return back()->with('status', __('A new code was sent if the previous one is no longer valid. Please wait a minute between requests.'));
+        if ($result === OtpService::COOLDOWN) {
+            return back()->withErrors([
+                'code' => __('Please wait before requesting another code.'),
+            ]);
+        }
+
+        return back()->with('status', __('A new code was sent.'));
     }
 
     private function pendingUser(Request $request): ?User

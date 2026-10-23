@@ -25,15 +25,7 @@ class OtpService
      */
     public function issue(User $user, OtpPurpose $purpose, ?string $ip, ?string $email = null): string
     {
-        $recent = OtpChallenge::query()
-            ->where('user_id', $user->id)
-            ->where('purpose', $purpose->value)
-            ->whereNull('consumed_at')
-            ->where('expires_at', '>', now())
-            ->where('created_at', '>', now()->subSeconds((int) config('ams.otp.resend_seconds')))
-            ->exists();
-
-        if ($recent) {
+        if ($this->cooldownSeconds($user, $purpose) > 0) {
             return self::COOLDOWN;
         }
 
@@ -99,8 +91,41 @@ class OtpService
 
             $challenge->forceFill(['consumed_at' => now()])->save();
 
+            OtpChallenge::query()
+                ->where('user_id', $user->id)
+                ->where('purpose', $purpose->value)
+                ->delete();
+                
             return true;
         });
+    }
+
+    public function cooldownSeconds(User $user, OtpPurpose $purpose): int
+    {
+        $base = (int) config('ams.otp.resend_seconds', 60);
+        $max = (int) config('ams.otp.max_resend_seconds', 900);
+        $window = (int) config('ams.otp.escalation_window_minutes', 60);
+
+        $sent = OtpChallenge::query()
+            ->where('user_id', $user->id)
+            ->where('purpose', $purpose->value)
+            ->where('created_at', '>', now()->subMinutes($window));
+
+        $count = (clone $sent)->count();
+
+        if ($count === 0) {
+            return 0;
+        }
+
+        $last = (clone $sent)->latest('created_at')->first()?->created_at;
+
+        if ($last === null) {
+            return 0;
+        }
+
+        $cooldown = min($base * (2 ** ($count - 1)), $max);
+
+        return max(0, $last->getTimestamp() + $cooldown - now()->getTimestamp());
     }
 
     private function hash(User $user, OtpPurpose $purpose, string $code, ?string $email = null): string

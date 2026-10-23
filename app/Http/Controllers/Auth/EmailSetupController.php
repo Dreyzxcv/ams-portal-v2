@@ -21,7 +21,7 @@ class EmailSetupController extends Controller
 {
     public const SESSION_KEY = 'email_setup_pending';
 
-    public function show(Request $request): Response|RedirectResponse
+    public function show(Request $request, OtpService $otp)
     {
         $pending = $this->pending($request);
 
@@ -29,10 +29,11 @@ class EmailSetupController extends Controller
             return to_route('login');
         }
 
-        [, $state] = $pending;
+        [$user, $state] = $pending;
 
         return Inertia::render('auth/email-setup', [
             'email' => $state['email'] ?? null,
+            'resend_available_in' => $otp->cooldownSeconds($user, OtpPurpose::EmailVerification),
             'status' => $request->session()->get('status'),
         ]);
     }
@@ -57,7 +58,7 @@ class EmailSetupController extends Controller
         }
 
         if ($result === OtpService::COOLDOWN) {
-            return back()->withErrors(['email' => __('A code was sent a moment ago. Please wait a minute before requesting another.')]);
+            return back()->withErrors(['email' => __('Please wait before requesting another code.')]);
         }
 
         // The address lives only in the server-side session until the code is verified.
@@ -160,11 +161,15 @@ class EmailSetupController extends Controller
             return back()->withErrors(['code' => __('We could not send the code. Try again shortly.')]);
         }
 
+        if ($result === OtpService::COOLDOWN) {
+            return back()->withErrors(['code' => __('Please wait before requesting another code.')]);
+        }
+
         if ($result === OtpService::SENT) {
             $audit->record('auth.email_otp_sent', null, 'user', $user->id);
         }
 
-        return back()->with('status', __('A new code was sent if the previous one is no longer valid. Please wait a minute between requests.'));
+        return back()->with('status', __('A new code was sent.'));
     }
 
     /** @return array{0: User, 1: array<string, mixed>}|null */
