@@ -248,7 +248,89 @@ it('submits expired attempts on the server and does not accept late answers', fu
     expect((float) $attempt->fresh()->auto_score)->toBe(0.0);
 });
 
-it('rejects quiz edits after the first attempt starts', function () {
+it('re-scores saved attempts and grade-page points for phase and final quizzes after edits', function (
+    string $componentKey,
+    string $expectedGrade,
+) {
+    $quiz = createQuiz(quizPayload($componentKey));
+    $trainee = User::factory()->create();
+    $reviewer = User::factory()->headInstructor()->create();
+    QuizAccess::create([
+        'quiz_id' => $quiz->id,
+        'trainee_id' => $trainee->id,
+        'granted_at' => now(),
+    ]);
+    $this->actingAs($trainee)->post(route('quizzes.attempts.start', $quiz))->assertRedirect();
+    $attempt = QuizAttempt::query()->firstOrFail();
+    $multipleChoice = $quiz->questions()->where('type', 'multiple_choice')->firstOrFail();
+    $paragraph = $quiz->questions()->where('type', 'paragraph')->firstOrFail();
+
+    $answers = [
+        ['question_id' => $multipleChoice->id, 'selected_option' => 0],
+        ['question_id' => $paragraph->id, 'answer_text' => 'A considered response.'],
+    ];
+    $this->actingAs($trainee)
+        ->patch(route('quizzes.attempts.answers', $attempt), ['answers' => $answers])
+        ->assertRedirect();
+    $this->actingAs($trainee)
+        ->post(route('quizzes.attempts.submit', $attempt), ['answers' => $answers])
+        ->assertRedirect();
+    $this->actingAs($reviewer)
+        ->put(route('quizzes.attempts.review.update', [$quiz, $attempt]), [
+            'answers' => [
+                ['question_id' => $paragraph->id, 'manual_score' => '1.50'],
+            ],
+        ])
+        ->assertRedirect(route('quizzes.show', $quiz));
+
+    $payload = quizPayload($componentKey);
+    $payload['title'] = 'Corrected quiz';
+    $payload['questions'][0]['id'] = $multipleChoice->id;
+    $payload['questions'][0]['prompt'] = 'Corrected question prompt.';
+    $payload['questions'][0]['correct_option'] = 0;
+    $payload['questions'][1]['id'] = $paragraph->id;
+    $payload['questions'][] = [
+        'type' => 'multiple_choice',
+        'prompt' => 'New question',
+        'points' => '2',
+        'options' => ['First', 'Second'],
+        'correct_option' => 0,
+    ];
+
+    $this->actingAs($reviewer)
+        ->get(route('quizzes.edit', $quiz))
+        ->assertInertia(fn (Assert $page) => $page
+            ->component('quizzes/form')
+            ->where('attempts_started', true));
+
+    $this->actingAs($reviewer)
+        ->put(route('quizzes.update', $quiz), $payload)
+        ->assertRedirect(route('quizzes.show', $quiz));
+
+    $component = GradeComponent::query()->where('key', $componentKey)->firstOrFail();
+    $attempt->refresh();
+    $grade = GradeRecord::query()
+        ->where('trainee_id', $trainee->id)
+        ->where('component_id', $component->id)
+        ->firstOrFail();
+
+    expect((float) $attempt->auto_score)->toBe(2.0)
+        ->and((float) $attempt->manual_score)->toBe(1.5)
+        ->and((float) $attempt->final_score)->toBe((float) $expectedGrade)
+        ->and((float) $grade->score)->toBe((float) $expectedGrade)
+        ->and($quiz->questions()->count())->toBe(3);
+
+    $this->actingAs($reviewer)
+        ->get(route('grades.index'))
+        ->assertInertia(fn (Assert $page) => $page
+            ->component('grades/index')
+            ->where("trainees.data.0.scores.{$component->id}", $expectedGrade));
+})->with([
+    'Phase 1' => ['phase_1', '12.50'],
+    'Final Examination' => ['final_exam', '50.00'],
+]);
+
+it('does not allow existing questions to be removed after an attempt starts', function () {
     $quiz = createQuiz();
     $trainee = User::factory()->create();
     QuizAccess::create([
@@ -258,14 +340,28 @@ it('rejects quiz edits after the first attempt starts', function () {
     ]);
     $this->actingAs($trainee)->post(route('quizzes.attempts.start', $quiz))->assertRedirect();
 
+    $question = $quiz->questions()->firstOrFail();
     $payload = quizPayload();
-    $payload['title'] = 'Edited after start';
+    $payload['questions'][0]['id'] = $question->id;
 
     $this->actingAs(User::factory()->headInstructor()->create())
         ->put(route('quizzes.update', $quiz), $payload)
-        ->assertSessionHasErrors('quiz');
+        ->assertSessionHasErrors([
+            'questions' => 'Existing questions cannot be removed or reordered after an attempt starts.',
+        ]);
 
-    expect($quiz->fresh()->title)->toBe('Phase assessment');
+    expect($quiz->fresh()->questions()->count())->toBe(2);
+
+    $phaseChangePayload = quizPayload('final_exam');
+    foreach ($quiz->questions()->get() as $index => $existingQuestion) {
+        $phaseChangePayload['questions'][$index]['id'] = $existingQuestion->id;
+    }
+
+    $this->actingAs(User::factory()->headInstructor()->create())
+        ->put(route('quizzes.update', $quiz), $phaseChangePayload)
+        ->assertSessionHasErrors([
+            'grade_component_key' => 'A quiz phase cannot be changed after an attempt starts.',
+        ]);
 });
 
 it('does not allow more than one quiz for a grade component', function () {

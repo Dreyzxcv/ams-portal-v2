@@ -13,6 +13,7 @@ type QuizRecord = QuizInput & {
 
 type Props = {
     quiz: QuizRecord | null;
+    attempts_started: boolean;
     components: { key: string; label: string }[];
 };
 
@@ -29,7 +30,11 @@ function emptyQuestion(): QuizQuestionInput {
     };
 }
 
-export default function QuizForm({ quiz, components }: Props) {
+export default function QuizForm({
+    quiz,
+    attempts_started,
+    components,
+}: Props) {
     const form = useForm<QuizInput>(
         quiz ?? {
             grade_component_key: components[0]?.key ?? 'phase_1',
@@ -93,6 +98,16 @@ export default function QuizForm({ quiz, components }: Props) {
                     </Button>
                 </div>
 
+                {attempts_started && (
+                    <p className="rounded-xl border px-4 py-3 text-sm text-muted-foreground">
+                        Changes will re-score submitted attempts using their
+                        saved answers. Added questions count as unanswered for
+                        submitted attempts. Existing questions cannot be
+                        removed, and the quiz phase is locked, but existing
+                        questions can still be edited.
+                    </p>
+                )}
+
                 <form onSubmit={submit} className="space-y-4">
                     <section className="grid gap-5 rounded-2xl border bg-card p-5 shadow-xs sm:grid-cols-2">
                         <div className="grid gap-2">
@@ -102,6 +117,7 @@ export default function QuizForm({ quiz, components }: Props) {
                             <select
                                 id="grade_component_key"
                                 value={form.data.grade_component_key}
+                                disabled={attempts_started}
                                 onChange={(event) =>
                                     form.setData(
                                         'grade_component_key',
@@ -219,7 +235,9 @@ export default function QuizForm({ quiz, components }: Props) {
                                         size="icon"
                                         aria-label={`Remove question ${index + 1}`}
                                         disabled={
-                                            form.data.questions.length === 1
+                                            form.data.questions.length === 1 ||
+                                            (attempts_started &&
+                                                question.id !== undefined)
                                         }
                                         onClick={() =>
                                             form.setData(

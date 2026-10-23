@@ -1,4 +1,5 @@
 export type QuizQuestionInput = {
+    id?: number;
     type: 'multiple_choice' | 'paragraph';
     prompt: string;
     points: string;
@@ -20,7 +21,6 @@ export type QuizListRow = {
     phase: string;
     question_count: number;
     attempt_count: number;
-    can_edit: boolean;
 };
 
 export type QuizAttemptAnswer = {

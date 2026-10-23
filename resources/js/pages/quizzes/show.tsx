@@ -41,7 +41,6 @@ type Props = {
         instructions: string;
         question_count: number;
         total_points: string;
-        can_edit: boolean;
     };
     accesses: AccessRow[];
     available_trainees: { id: number; name: string; username: string }[];
@@ -79,18 +78,16 @@ export default function QuizzesShow({
                         </div>
                     </div>
                     <div className="flex flex-wrap gap-2">
-                        {quiz.can_edit && (
-                            <Button
-                                asChild
-                                variant="outline"
-                                className="rounded-xl"
-                            >
-                                <Link href={QuizController.edit(quiz.id)}>
-                                    <Pencil aria-hidden="true" />
-                                    Edit quiz
-                                </Link>
-                            </Button>
-                        )}
+                        <Button
+                            asChild
+                            variant="outline"
+                            className="rounded-xl"
+                        >
+                            <Link href={QuizController.edit(quiz.id)}>
+                                <Pencil aria-hidden="true" />
+                                Edit quiz
+                            </Link>
+                        </Button>
                         <Button asChild variant="ghost" className="rounded-xl">
                             <Link href={QuizController.index()}>
                                 <ArrowLeft aria-hidden="true" />
@@ -100,9 +97,11 @@ export default function QuizzesShow({
                     </div>
                 </header>
 
-                {!quiz.can_edit && (
+                {attempts.length > 0 && (
                     <p className="rounded-xl border px-4 py-3 text-sm text-muted-foreground">
-                        This quiz is locked because an attempt has started.
+                        Quiz edits remain available. Changes re-score submitted
+                        attempts; newly added questions count as unanswered for
+                        those attempts.
                     </p>
                 )}
 

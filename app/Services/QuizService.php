@@ -62,14 +62,16 @@ class QuizService
 
         DB::transaction(function () use ($actor, $quiz, $data): void {
             $quiz = Quiz::query()->whereKey($quiz->id)->lockForUpdate()->firstOrFail();
+            $hasAttempts = $quiz->attempts()->exists();
 
-            if ($quiz->attempts()->exists()) {
+            $component = $this->eligibleComponent((string) $data['grade_component_key']);
+
+            if ($hasAttempts && $component->key !== $quiz->grade_component_key) {
                 throw ValidationException::withMessages([
-                    'quiz' => 'This quiz cannot be edited after a trainee starts an attempt.',
+                    'grade_component_key' => 'A quiz phase cannot be changed after an attempt starts.',
                 ]);
             }
 
-            $component = $this->eligibleComponent((string) $data['grade_component_key']);
             $componentAlreadyHasQuiz = Quiz::query()
                 ->where('grade_component_key', $component->key)
                 ->where('id', '!=', $quiz->id)
@@ -87,8 +89,14 @@ class QuizService
                 'instructions' => $data['instructions'],
                 'duration_minutes' => $data['duration_minutes'],
             ]);
-            $quiz->questions()->delete();
-            $this->saveQuestions($quiz, $data['questions']);
+
+            if ($hasAttempts) {
+                $this->updateQuestionsWithAttempts($quiz, $data['questions']);
+                $this->regradeSubmittedAttempts($actor, $quiz);
+            } else {
+                $quiz->questions()->delete();
+                $this->saveQuestions($quiz, $data['questions']);
+            }
 
             $this->audit->record('quiz.updated', $actor, 'quiz', $quiz->id, [
                 'grade_component' => $component->key,
@@ -350,21 +358,160 @@ class QuizService
         });
     }
 
+    /**
+     * @param  list<array<string, mixed>>  $questions
+     */
+    private function updateQuestionsWithAttempts(Quiz $quiz, array $questions): void
+    {
+        $existingQuestions = $quiz->questions()->get();
+        $existingIds = $existingQuestions->pluck('id')->map(fn ($id) => (int) $id)->all();
+        $submittedIds = collect($questions)
+            ->pluck('id')
+            ->filter(fn ($id) => $id !== null)
+            ->map(fn ($id) => (int) $id)
+            ->values()
+            ->all();
+
+        if ($submittedIds !== $existingIds) {
+            throw ValidationException::withMessages([
+                'questions' => 'Existing questions cannot be removed or reordered after an attempt starts.',
+            ]);
+        }
+
+        $questionsById = $existingQuestions->keyBy('id');
+        $position = (int) $existingQuestions->max('position');
+
+        foreach ($questions as $question) {
+            $attributes = $this->questionAttributes($question);
+
+            if (isset($question['id'])) {
+                $questionsById->get((int) $question['id'])->update($attributes);
+
+                continue;
+            }
+
+            $quiz->questions()->create([
+                ...$attributes,
+                'position' => ++$position,
+            ]);
+        }
+    }
+
+    private function regradeSubmittedAttempts(User $actor, Quiz $quiz): void
+    {
+        $quiz->load('gradeComponent');
+        $questions = $quiz->questions()->get();
+        $totalPoints = (float) $questions->sum('points');
+        $attempts = QuizAttempt::query()
+            ->where('quiz_id', $quiz->id)
+            ->with(['answers', 'trainee'])
+            ->lockForUpdate()
+            ->get();
+
+        foreach ($attempts as $attempt) {
+            $answers = $attempt->answers->keyBy('quiz_question_id');
+            $autoScore = 0.0;
+            $manualScore = 0.0;
+
+            foreach ($questions as $question) {
+                $answer = $answers->get($question->id);
+
+                if ($answer === null) {
+                    continue;
+                }
+
+                if ($question->type === 'multiple_choice') {
+                    $answerScore = $answer->selected_option !== null
+                        && (int) $answer->selected_option === (int) $question->correct_option
+                        ? (float) $question->points
+                        : 0.0;
+                    $answer->fill([
+                        'answer_text' => null,
+                        'auto_score' => number_format($answerScore, 2, '.', ''),
+                        'manual_score' => null,
+                    ])->save();
+                    $autoScore += $answerScore;
+
+                    continue;
+                }
+
+                $answerManualScore = min(
+                    (float) ($answer->manual_score ?? 0),
+                    (float) $question->points,
+                );
+                $answer->fill([
+                    'selected_option' => null,
+                    'auto_score' => null,
+                    'manual_score' => number_format($answerManualScore, 2, '.', ''),
+                ])->save();
+
+                if ($attempt->isSubmitted()) {
+                    $manualScore += $answerManualScore;
+                }
+            }
+
+            if (! $attempt->isSubmitted()) {
+                continue;
+            }
+
+            $changes = ['auto_score' => number_format($autoScore, 2, '.', '')];
+
+            if ($attempt->isReviewed()) {
+                $finalScore = round(
+                    (($autoScore + $manualScore) / $totalPoints)
+                        * (float) $quiz->gradeComponent->max_score,
+                    2,
+                );
+                $changes['manual_score'] = number_format($manualScore, 2, '.', '');
+                $changes['final_score'] = number_format($finalScore, 2, '.', '');
+
+                $this->grades->save(
+                    $actor,
+                    $attempt->trainee,
+                    $quiz->gradeComponent,
+                    $finalScore,
+                    'Quiz updated: '.$quiz->title,
+                );
+            }
+
+            $attempt->update($changes);
+
+            $this->audit->record('quiz.attempt_regraded', $actor, 'quiz_attempt', $attempt->id, [
+                'auto_score' => number_format($autoScore, 2, '.', ''),
+                'manual_score' => $attempt->isReviewed()
+                    ? number_format($manualScore, 2, '.', '')
+                    : null,
+                'final_score' => $changes['final_score'] ?? null,
+                'total_points' => number_format($totalPoints, 2, '.', ''),
+            ]);
+        }
+    }
+
     /** @param list<array<string, mixed>> $questions */
     private function saveQuestions(Quiz $quiz, array $questions): void
     {
         foreach ($questions as $position => $question) {
-            $isMultipleChoice = $question['type'] === 'multiple_choice';
-
             $quiz->questions()->create([
-                'type' => $question['type'],
-                'prompt' => $question['prompt'],
-                'points' => number_format((float) $question['points'], 2, '.', ''),
-                'options' => $isMultipleChoice ? array_values($question['options']) : null,
-                'correct_option' => $isMultipleChoice ? (int) $question['correct_option'] : null,
+                ...$this->questionAttributes($question),
                 'position' => $position + 1,
             ]);
         }
+    }
+
+    /** @param array<string, mixed> $question
+     * @return array{type: string, prompt: string, points: string, options: ?array, correct_option: ?int}
+     */
+    private function questionAttributes(array $question): array
+    {
+        $isMultipleChoice = $question['type'] === 'multiple_choice';
+
+        return [
+            'type' => $question['type'],
+            'prompt' => $question['prompt'],
+            'points' => number_format((float) $question['points'], 2, '.', ''),
+            'options' => $isMultipleChoice ? array_values($question['options']) : null,
+            'correct_option' => $isMultipleChoice ? (int) $question['correct_option'] : null,
+        ];
     }
 
     /**

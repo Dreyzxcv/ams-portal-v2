@@ -66,7 +66,6 @@ class QuizController extends Controller
                     'phase' => $quiz->gradeComponent->label,
                     'question_count' => $quiz->questions_count,
                     'attempt_count' => $quiz->attempts_count,
-                    'can_edit' => $quiz->attempts_count === 0,
                 ])->values(),
             'can' => ['create' => Permissions::allows($actor, Permissions::QUIZZES_MANAGE)
                 && GradeComponent::query()
@@ -83,6 +82,7 @@ class QuizController extends Controller
 
         return Inertia::render('quizzes/form', [
             'quiz' => null,
+            'attempts_started' => false,
             'components' => $this->availableComponents(),
         ]);
     }
@@ -131,7 +131,6 @@ class QuizController extends Controller
                 'instructions' => $quiz->instructions,
                 'question_count' => $quiz->questions()->count(),
                 'total_points' => $quiz->questions()->sum('points'),
-                'can_edit' => $attempts->isEmpty(),
             ],
             'accesses' => $accesses->map(fn (QuizAccess $access) => [
                 'trainee_id' => $access->trainee_id,
@@ -158,7 +157,7 @@ class QuizController extends Controller
     public function edit(Quiz $quiz): Response
     {
         Gate::authorize('manage', $quiz);
-        abort_if($quiz->attempts()->exists(), 403, 'A quiz cannot be edited after an attempt starts.');
+        $attemptsStarted = $quiz->attempts()->exists();
 
         return Inertia::render('quizzes/form', [
             'quiz' => [
@@ -168,6 +167,7 @@ class QuizController extends Controller
                 'instructions' => $quiz->instructions,
                 'duration_minutes' => $quiz->duration_minutes,
                 'questions' => $quiz->questions()->get()->map(fn ($question) => [
+                    'id' => $question->id,
                     'type' => $question->type,
                     'prompt' => $question->prompt,
                     'points' => $question->points,
@@ -175,6 +175,7 @@ class QuizController extends Controller
                     'correct_option' => $question->correct_option,
                 ])->values(),
             ],
+            'attempts_started' => $attemptsStarted,
             'components' => $this->availableComponents($quiz),
         ]);
     }
