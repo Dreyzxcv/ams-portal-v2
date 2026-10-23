@@ -8,6 +8,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Quizzes\GrantQuizAccessRequest;
 use App\Http\Requests\Quizzes\StoreQuizRequest;
 use App\Http\Requests\Quizzes\UpdateQuizRequest;
+use App\Models\AuditLog;
 use App\Models\GradeComponent;
 use App\Models\Quiz;
 use App\Models\QuizAccess;
@@ -110,6 +111,17 @@ class QuizController extends Controller
             ->with('trainee:id,name,username')
             ->orderByDesc('started_at')
             ->get();
+        $activityEvents = AuditLog::query()
+            ->where('subject_type', 'quiz_attempt')
+            ->whereIn('subject_id', $attempts->pluck('id')->map(fn ($id) => (string) $id))
+            ->whereIn('action', array_map(
+                fn (string $event) => 'quiz.'.$event,
+                ['page_hidden', 'page_visible', 'window_blur', 'window_focus', 'fullscreen_entered', 'fullscreen_exited', 'fullscreen_unsupported'],
+            ))
+            ->orderBy('occurred_at')
+            ->orderBy('id')
+            ->get(['action', 'subject_id', 'occurred_at'])
+            ->groupBy('subject_id');
 
         $availableTrainees = User::query()
             ->where('role', Role::Trainee->value)
@@ -150,7 +162,9 @@ class QuizController extends Controller
                 'status' => $attempt->isReviewed() ? 'graded' : ($attempt->isSubmitted() ? 'awaiting review' : 'in progress'),
                 'auto_score' => $attempt->auto_score,
                 'final_score' => $attempt->final_score,
+                'activity' => $this->activitySummary($activityEvents->get((string) $attempt->id, collect())),
             ])->values(),
+
             'can' => ['reset_attempts' => Permissions::allows($request->user(), Permissions::QUIZZES_RESET_ATTEMPTS)],
         ]);
     }
@@ -256,5 +270,53 @@ class QuizController extends Controller
         }
 
         return $attempt->isSubmitted() ? 'awaiting review' : 'in progress';
+    }
+
+    /**
+     * Page inactivity is a signal, not proof of misconduct. Notifications,
+     * screen locks and clicking outside the page can trigger it too.
+     *
+     * @param  Collection<int, AuditLog>  $events
+     * @return array<string, mixed>
+     */
+    private function activitySummary(Collection $events): array
+    {
+        $leftCount = 0;
+        $awaySeconds = 0;
+        $fullscreenExits = 0;
+        $unsupported = false;
+        $awayStart = null;
+
+        foreach ($events as $event) {
+            $name = substr($event->action, 5);
+            $at = $event->occurred_at?->getTimestamp();
+
+            if ($at === null) {
+                continue;
+            }
+
+            if (in_array($name, ['page_hidden', 'window_blur'], true) && $awayStart === null) {
+                $leftCount++;
+                $awayStart = $at;
+            } elseif (in_array($name, ['page_visible', 'window_focus'], true) && $awayStart !== null) {
+                $awaySeconds += max(0, $at - $awayStart);
+                $awayStart = null;
+            } elseif ($name === 'fullscreen_exited') {
+                $fullscreenExits++;
+            } elseif ($name === 'fullscreen_unsupported') {
+                $unsupported = true;
+            }
+        }
+
+        return [
+            'left_count' => $leftCount,
+            'away_seconds' => $awaySeconds,
+            'fullscreen_exits' => $fullscreenExits,
+            'fullscreen_unsupported' => $unsupported,
+            'events' => $events->take(-200)->map(fn (AuditLog $event) => [
+                'action' => substr($event->action, 5),
+                'at' => $event->occurred_at?->toIso8601String(),
+            ])->values(),
+        ];
     }
 }

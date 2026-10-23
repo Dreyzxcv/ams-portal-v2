@@ -1,4 +1,5 @@
-import { Head, Link } from '@inertiajs/react';
+import { Head, Link, router } from '@inertiajs/react';
+import { useEcho } from '@laravel/echo-react';
 import { ArrowLeft, ChevronLeft, ChevronRight, Megaphone } from 'lucide-react';
 import AnnouncementMemo from '@/components/announcement-memo';
 import { Button } from '@/components/ui/button';
@@ -21,6 +22,14 @@ export default function AnnouncementsArchive({
 }: {
     announcements: Paginated<PublicAnnouncement>;
 }) {
+    useEcho(
+        'announcements',
+        '.announcements.changed',
+        () => router.reload({ only: ['announcements'] }),
+        [],
+        'public',
+    );
+
     const { links, current_page, last_page } = announcements;
 
     // Laravel paginator: first link = Previous, last link = Next, middle = pages.

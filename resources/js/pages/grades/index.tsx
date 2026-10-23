@@ -1,4 +1,5 @@
 import { Head, Link, router } from '@inertiajs/react';
+import { useEcho } from '@laravel/echo-react';
 import { Search } from 'lucide-react';
 import { useState } from 'react';
 import GradeController from '@/actions/App/Http/Controllers/Grades/GradeController';
@@ -25,6 +26,13 @@ function initials(name: string) {
 
 export default function GradesIndex({ trainees, components, filters }: Props) {
     const [search, setSearch] = useState(filters.search);
+
+    useEcho(
+        'staff',
+        '.grades.changed',
+        () => router.reload({ only: ['trainees'] }),
+        [],
+    );
 
     return (
         <>

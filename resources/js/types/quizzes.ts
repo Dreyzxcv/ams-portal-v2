@@ -28,3 +28,12 @@ export type QuizAttemptAnswer = {
     selected_option?: number;
     answer_text?: string;
 };
+
+export type QuizAttemptEvent =
+    | 'page_hidden'
+    | 'page_visible'
+    | 'window_blur'
+    | 'window_focus'
+    | 'fullscreen_entered'
+    | 'fullscreen_exited'
+    | 'fullscreen_unsupported';

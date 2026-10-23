@@ -1,6 +1,8 @@
-import { Form, Head, Link } from '@inertiajs/react';
+import { Form, Head, Link, router } from '@inertiajs/react';
+import { useEcho } from '@laravel/echo-react';
 import { useState } from 'react';
 import {
+    Activity as ActivityIcon,
     ArrowLeft,
     ClipboardList,
     Pencil,
@@ -30,6 +32,16 @@ type AccessRow = {
     granted_at: string;
 };
 
+type ActivityEvent = { action: string; at: string | null };
+
+type Activity = {
+    left_count: number;
+    away_seconds: number;
+    fullscreen_exits: number;
+    fullscreen_unsupported: boolean;
+    events: ActivityEvent[];
+};
+
 type AttemptRow = {
     id: number;
     trainee_id: number;
@@ -39,6 +51,7 @@ type AttemptRow = {
     submitted_at: string | null;
     reviewed_at: string | null;
     status: string;
+    activity: Activity;
     auto_score: string | null;
     final_score: string | null;
 };
@@ -127,6 +140,101 @@ function ResetAttemptButton({
     );
 }
 
+const eventLabels: Record<string, string> = {
+    page_hidden: 'Page became hidden (tab switch or minimized)',
+    page_visible: 'Page visible again',
+    window_blur: 'Window lost focus (for example alt-tab)',
+    window_focus: 'Window focused again',
+    fullscreen_entered: 'Entered fullscreen',
+    fullscreen_exited: 'Exited fullscreen',
+    fullscreen_unsupported: 'Fullscreen not supported on this device',
+};
+
+function formatAway(seconds: number) {
+    if (seconds < 60) {
+        return `${seconds}s`;
+    }
+
+    const minutes = Math.floor(seconds / 60);
+
+    return `${minutes}m ${seconds % 60}s`;
+}
+
+function ActivityCell({ attempt }: { attempt: AttemptRow }) {
+    const { activity } = attempt;
+    const flagged = activity.left_count > 0 || activity.fullscreen_exits > 0;
+
+    return (
+        <Dialog>
+            <DialogTrigger asChild>
+                <button
+                    type="button"
+                    className="flex flex-wrap items-center gap-1.5 text-left"
+                    aria-label={`View activity for ${attempt.name}`}
+                >
+                    <span
+                        className={
+                            flagged
+                                ? 'rounded-full bg-amber-500/10 px-2.5 py-1 text-xs font-medium text-amber-700 dark:text-amber-400'
+                                : 'rounded-full bg-muted px-2.5 py-1 text-xs text-muted-foreground'
+                        }
+                    >
+                        Left page {activity.left_count}x
+                        {activity.away_seconds > 0 &&
+                            ` · ${formatAway(activity.away_seconds)} away`}
+                    </span>
+                    {activity.fullscreen_exits > 0 && (
+                        <span className="rounded-full bg-amber-500/10 px-2.5 py-1 text-xs font-medium text-amber-700 dark:text-amber-400">
+                            Exited fullscreen {activity.fullscreen_exits}x
+                        </span>
+                    )}
+                    {activity.fullscreen_unsupported && (
+                        <span className="rounded-full bg-muted px-2.5 py-1 text-xs text-muted-foreground">
+                            No fullscreen support
+                        </span>
+                    )}
+                </button>
+            </DialogTrigger>
+            <DialogContent className="max-h-[80vh] overflow-y-auto">
+                <DialogHeader>
+                    <DialogTitle>Activity for {attempt.name}</DialogTitle>
+                    <DialogDescription>
+                        These events show the page became inactive. They are
+                        signals, not proof of misconduct. Notifications, screen
+                        locks and clicks outside the page can cause them too.
+                    </DialogDescription>
+                </DialogHeader>
+                {activity.events.length === 0 ? (
+                    <p className="text-sm text-muted-foreground">
+                        No activity events recorded.
+                    </p>
+                ) : (
+                    <ol className="divide-y text-sm">
+                        {activity.events.map((event, i) => (
+                            <li
+                                key={i}
+                                className="flex justify-between gap-4 py-2"
+                            >
+                                <span>
+                                    {eventLabels[event.action] ?? event.action}
+                                </span>
+                                <time
+                                    className="shrink-0 text-xs text-muted-foreground tabular-nums"
+                                    dateTime={event.at ?? undefined}
+                                >
+                                    {event.at
+                                        ? new Date(event.at).toLocaleTimeString()
+                                        : ''}
+                                </time>
+                            </li>
+                        ))}
+                    </ol>
+                )}
+            </DialogContent>
+        </Dialog>
+    );
+}
+
 export default function QuizzesShow({
     quiz,
     accesses,
@@ -134,6 +242,13 @@ export default function QuizzesShow({
     attempts,
     can,
 }: Props) {
+    useEcho(
+        'staff',
+        '.quizzes.changed',
+        () => router.reload({ only: ['accesses', 'attempts'] }),
+        [],
+    );
+
     return (
         <>
             <Head title={quiz.title} />
@@ -323,6 +438,7 @@ export default function QuizzesShow({
                                         <th className="px-4 py-3 font-medium">
                                             Automatic score
                                         </th>
+                                        <th className="px-4 py-3 font-medium">Activity</th>
                                         <th className="px-5 py-3" />
                                     </tr>
                                 </thead>
@@ -352,6 +468,9 @@ export default function QuizzesShow({
                                                 {attempt.auto_score == null
                                                     ? '—'
                                                     : `${Number(attempt.auto_score)} / ${Number(quiz.total_points)}`}
+                                            </td>
+                                            <td className="px-4 py-3">
+                                                <ActivityCell attempt={attempt} />
                                             </td>
                                             <td className="px-5 py-3 text-right">
                                                 <div className="flex justify-end gap-2">

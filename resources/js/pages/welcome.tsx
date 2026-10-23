@@ -1,4 +1,5 @@
-import { Head, Link, usePage, usePoll } from '@inertiajs/react';
+import { Head, Link, router, usePage, usePoll } from '@inertiajs/react';
+import { useEcho } from '@laravel/echo-react';
 import {
     ArrowRight,
     Award,
@@ -184,7 +185,14 @@ export default function Welcome({
     const [menuOpen, setMenuOpen] = useState(false);
     const [slide, setSlide] = useState(0);
     
-    usePoll(3000, { only: ['intake', 'announcements'] });
+    usePoll(3000, { only: ['intake'] });
+    useEcho(
+        'announcements',
+        '.announcements.changed',
+        () => router.reload({ only: ['announcements'] }),
+        [],
+        'public',
+    );
 
     const portalHref = auth.user ? dashboard() : login();
     const portalLabel = auth.user ? 'Go to dashboard' : 'Access AMS Portal';

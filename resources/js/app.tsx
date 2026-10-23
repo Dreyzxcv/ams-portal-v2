@@ -5,6 +5,17 @@ import { initializeTheme } from '@/hooks/use-appearance';
 import AppLayout from '@/layouts/app-layout';
 import AuthLayout from '@/layouts/auth-layout';
 import SettingsLayout from '@/layouts/settings/layout';
+import { configureEcho } from '@laravel/echo-react';
+
+configureEcho({
+    broadcaster: 'reverb',
+    key: import.meta.env.VITE_REVERB_APP_KEY,
+    wsHost: import.meta.env.VITE_REVERB_HOST ?? '127.0.0.1',
+    wsPort: Number(import.meta.env.VITE_REVERB_PORT ?? 8080),
+    wssPort: Number(import.meta.env.VITE_REVERB_PORT ?? 443),
+    forceTLS: (import.meta.env.VITE_REVERB_SCHEME ?? 'http') === 'https',
+    enabledTransports: ['ws', 'wss'],
+});
 
 const appName = 'AMS Portal v2';
 
@@ -14,6 +25,7 @@ void createInertiaApp({
         switch (true) {
             case name === 'welcome':
             case name === 'announcements/archive':
+            case name === 'quizzes/attempt':
                 return null;
             case name.startsWith('auth/'):
                 return AuthLayout;

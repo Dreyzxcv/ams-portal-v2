@@ -1,4 +1,5 @@
 import { Head, Link, router, usePage } from '@inertiajs/react';
+import { useEcho } from '@laravel/echo-react';
 import { Megaphone, Pin, PinOff, Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { create, destroy, edit, index, pin, publish, retry, unpin, unpublish } from '@/routes/announcements';
@@ -22,6 +23,13 @@ const pill = 'inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs fo
 const post = (url: string) => router.post(url, {}, { preserveScroll: true });
 
 export default function Index({ announcements }: { announcements: Paginated }) {
+    useEcho(
+        'staff',
+        '.announcements.changed',
+        () => router.reload({ only: ['announcements'] }),
+        [],
+    );
+
     // Shown only if your app shares flash under `status`; the per-row badges below are the source of truth.
     const status = (usePage().props as { status?: string }).status;
 

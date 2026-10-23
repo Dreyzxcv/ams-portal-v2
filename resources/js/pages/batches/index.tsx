@@ -4,7 +4,7 @@ import { useState } from 'react';
 import BatchController from '@/actions/App/Http/Controllers/Batches/BatchController';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { LiveGrades } from '@/components/live-grades';
+import { LiveBatchData } from '@/components/live-grades';
 import type { BatchRow } from '@/types/batches';
 import type { Paginated } from '@/types/users';
 
@@ -20,7 +20,7 @@ export default function BatchesIndex({ batches, filters, can }: Props) {
     return (
         <>
             <Head title="Batches" />
-            <LiveGrades only={['batches']} />
+            <LiveBatchData only={['batches']} />
 
             <div className="mx-auto w-full max-w-7xl space-y-4 p-4 sm:p-6">
                 <div className="flex flex-wrap items-center justify-between gap-4 rounded-3xl border bg-sky-500/10 p-6">

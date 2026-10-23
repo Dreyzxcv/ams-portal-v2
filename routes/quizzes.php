@@ -21,7 +21,9 @@ Route::middleware(['auth'])->prefix('quizzes')->name('quizzes.')->group(function
         ->name('attempts.answers');
     Route::post('attempts/{attempt}/submit', [QuizAttemptController::class, 'submit'])
         ->name('attempts.submit');
-
+    Route::post('attempts/{attempt}/events', [QuizAttemptController::class, 'recordEvent'])
+        ->middleware('throttle:120,1')
+        ->name('attempts.events');
     Route::get('{quiz}/attempts/{attempt}/review', [QuizReviewController::class, 'show'])
         ->scopeBindings()
         ->name('attempts.review');

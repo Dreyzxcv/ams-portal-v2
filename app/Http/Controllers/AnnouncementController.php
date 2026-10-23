@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Events\AnnouncementsChanged;
 use App\Http\Requests\AnnouncementRequest;
 use App\Models\Announcement;
 use App\Services\AnnouncementPublisher;
@@ -43,6 +44,8 @@ class AnnouncementController extends Controller
 
         if ($request->boolean('publish')) {
             $announcement = $this->publisher->publish($announcement);
+        } else {
+            event(new AnnouncementsChanged);
         }
 
         return to_route('announcements.index')->with('status', $this->statusMessage($announcement));
@@ -57,7 +60,9 @@ class AnnouncementController extends Controller
 
     public function update(AnnouncementRequest $request, Announcement $announcement): RedirectResponse
     {
+        $wasPublished = $announcement->isPublished();
         $announcement->update($request->safe()->only(['recipient', 'sender', 'subject', 'body', 'signature']));
+        event(new AnnouncementsChanged($wasPublished));
 
         if ($request->boolean('publish')) {
             $announcement = $this->publisher->publish($announcement);
@@ -69,8 +74,11 @@ class AnnouncementController extends Controller
     public function destroy(Announcement $announcement): RedirectResponse
     {
         Gate::authorize('delete', $announcement);
+        $wasPublished = $announcement->isPublished();
 
         $announcement->delete();
+
+        event(new AnnouncementsChanged($wasPublished));
 
         return to_route('announcements.index')->with('status', 'Announcement removed.');
     }
@@ -112,6 +120,7 @@ class AnnouncementController extends Controller
 
         if (! $announcement->isPinned()) {
             $announcement->forceFill(['pinned_at' => now()])->save();
+            event(new AnnouncementsChanged(true));
         }
 
         return back();
@@ -122,6 +131,7 @@ class AnnouncementController extends Controller
         Gate::authorize('unpin', $announcement);
 
         $announcement->forceFill(['pinned_at' => null])->save();
+        event(new AnnouncementsChanged(true));
 
         return back();
     }

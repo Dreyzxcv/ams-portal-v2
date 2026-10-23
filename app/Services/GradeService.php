@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Enums\Role;
+use App\Events\GradesChanged;
 use App\Models\GradeComponent;
 use App\Models\GradeRecord;
 use App\Models\GradeRevision;
@@ -65,6 +66,8 @@ class GradeService
                 'old' => $old,
                 'new' => $new,
             ]);
+
+            event(new GradesChanged($trainee->id));
         });
     }
 
@@ -98,6 +101,8 @@ class GradeService
                 'component' => $component->key,
                 'old' => $old,
             ]);
+
+            event(new GradesChanged($trainee->id));
 
             return true;
         });

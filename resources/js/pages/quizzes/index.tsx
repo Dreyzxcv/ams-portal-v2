@@ -1,4 +1,5 @@
-import { Head, Link } from '@inertiajs/react';
+import { Head, Link, router } from '@inertiajs/react';
+import { useEcho } from '@laravel/echo-react';
 import { ClipboardList, Plus } from 'lucide-react';
 import QuizController from '@/actions/App/Http/Controllers/Quizzes/QuizController';
 import { Button } from '@/components/ui/button';
@@ -10,6 +11,13 @@ type Props = {
 };
 
 export default function QuizzesIndex({ quizzes, can }: Props) {
+    useEcho(
+        'staff',
+        '.quizzes.changed',
+        () => router.reload({ only: ['quizzes', 'can'] }),
+        [],
+    );
+
     return (
         <>
             <Head title="Quizzes" />

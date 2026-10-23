@@ -1375,7 +1375,13 @@ export default function Dashboard({
     return (
         <>
             <Head title="Dashboard" />
-            {mode === 'trainee' && <LiveGrades only={['trainee']} />}
+            <LiveGrades
+                only={
+                    mode === 'trainee'
+                        ? ['trainee']
+                        : ['batches', 'groups', 'activity', 'trend']
+                }
+            />
 
             <div className="mx-auto w-full max-w-7xl space-y-4 p-4 sm:p-6">
                 {mode === 'trainee' ? (

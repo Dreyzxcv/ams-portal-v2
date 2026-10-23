@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Enums\Role;
+use App\Events\QuizzesChanged;
 use App\Models\GradeComponent;
 use App\Models\Quiz;
 use App\Models\QuizAccess;
@@ -10,7 +11,6 @@ use App\Models\QuizAnswer;
 use App\Models\QuizAttempt;
 use App\Models\User;
 use App\Support\Permissions;
-use App\Models\GradeRecord;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Support\Facades\DB;
@@ -51,6 +51,8 @@ class QuizService
             $this->audit->record('quiz.created', $actor, 'quiz', $quiz->id, [
                 'grade_component' => $component->key,
             ]);
+
+            event(new QuizzesChanged(notifyActiveUsers: true));
 
             return $quiz;
         });
@@ -102,6 +104,8 @@ class QuizService
             $this->audit->record('quiz.updated', $actor, 'quiz', $quiz->id, [
                 'grade_component' => $component->key,
             ]);
+
+            event(new QuizzesChanged(notifyActiveUsers: true));
         });
     }
 
@@ -136,6 +140,8 @@ class QuizService
             $this->audit->record('quiz.access_granted', $actor, 'quiz', $quiz->id, [
                 'trainee_id' => $trainee->id,
             ]);
+
+            event(new QuizzesChanged($trainee->id));
         });
     }
 
@@ -155,6 +161,8 @@ class QuizService
             $this->audit->record('quiz.access_revoked', $actor, 'quiz', $quiz->id, [
                 'trainee_id' => $trainee->id,
             ]);
+
+            event(new QuizzesChanged($trainee->id));
         });
     }
 
@@ -184,6 +192,8 @@ class QuizService
 
             $this->audit->record('quiz.attempt_started', $trainee, 'quiz_attempt', $attempt->id);
 
+            event(new QuizzesChanged($trainee->id));
+
             return $attempt;
         });
     }
@@ -212,6 +222,8 @@ class QuizService
 
             $this->ensureActiveAccess($trainee, $attempt->quiz);
             $this->storeAnswers($attempt, $answers);
+
+            event(new QuizzesChanged($trainee->id));
 
             return true;
         });
@@ -257,6 +269,26 @@ class QuizService
 
             return true;
         });
+    }
+
+    public function recordAttemptEvent(QuizAttempt $attempt, User $trainee, string $event, ?string $clientTime): void
+    {
+        if ($attempt->trainee_id !== $trainee->id) {
+            abort(403);
+        }
+
+        $this->ensureActiveAccess($trainee, $attempt->quiz);
+
+        if ($attempt->isSubmitted() || now()->greaterThanOrEqualTo($attempt->expires_at)) {
+            return;
+        }
+
+        $this->audit->record('quiz.'.$event, $trainee, 'quiz_attempt', $attempt->id, [
+            'quiz_id' => $attempt->quiz_id,
+            'client_time' => $clientTime,
+        ]);
+
+        event(new QuizzesChanged($trainee->id));
     }
 
     public function submitExpiredAttempts(): int
@@ -356,6 +388,8 @@ class QuizService
                 'manual_score' => number_format($manualScore, 2, '.', ''),
                 'grade_score' => number_format($gradeScore, 2, '.', ''),
             ]);
+
+            event(new QuizzesChanged($attempt->trainee_id));
         });
     }
 
@@ -540,6 +574,17 @@ class QuizService
                 throw ValidationException::withMessages(['answers' => 'Paragraph answers cannot include an option.']);
             }
 
+            $existing = QuizAnswer::query()
+                ->where('quiz_attempt_id', $attempt->id)
+                ->where('quiz_question_id', $question->id)
+                ->first();
+
+            $isMultipleChoice = $question->type === 'multiple_choice';
+            $previousOption = $existing?->selected_option === null ? null : (int) $existing->selected_option;
+            $changed = $isMultipleChoice
+                ? $previousOption !== $selectedOption
+                : (string) ($existing?->answer_text ?? '') !== (string) ($answerText ?? '');
+
             QuizAnswer::query()->updateOrCreate(
                 [
                     'quiz_attempt_id' => $attempt->id,
@@ -550,6 +595,18 @@ class QuizService
                     'answer_text' => $answerText,
                 ],
             );
+
+            if ($changed) {
+                // Never log answer content, only what changed.
+                $this->audit->record('quiz.answer_changed', $attempt->trainee, 'quiz_attempt', $attempt->id, [
+                    'question_id' => $question->id,
+                    'position' => $question->position,
+                    'type' => $question->type,
+                    ...($isMultipleChoice
+                        ? ['from_option' => $previousOption, 'to_option' => $selectedOption]
+                        : ['length' => mb_strlen((string) $answerText)]),
+                ]);
+            }
         }
     }
 
@@ -593,6 +650,8 @@ class QuizService
             $attempt->delete();
 
             $this->audit->record('quiz.attempt_reset', $actor, 'quiz_attempt', $attempt->id, $details);
+
+            event(new QuizzesChanged((int) $details['trainee_id']));
         });
     }
 
@@ -631,6 +690,8 @@ class QuizService
             'automatic_score' => number_format($autoScore, 2, '.', ''),
             'timed_out' => $submittedAt->equalTo($attempt->expires_at),
         ]);
+
+        event(new QuizzesChanged($attempt->trainee_id));
     }
 
     private function eligibleComponent(string $key): GradeComponent

@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Enums\DiscordDeliveryStatus as Status;
+use App\Events\AnnouncementsChanged;
 use App\Models\Announcement;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Support\Facades\Http;
@@ -16,6 +17,7 @@ class AnnouncementPublisher
     {
         if (! $announcement->isPublished()) {
             $announcement->forceFill(['published_at' => now()])->save();
+            event(new AnnouncementsChanged(true));
         }
 
         return $this->sendToDiscord($announcement);
@@ -25,6 +27,7 @@ class AnnouncementPublisher
     {
         // The portal copy is hidden; a message already in Discord is not deleted.
         $announcement->forceFill(['published_at' => null])->save();
+        event(new AnnouncementsChanged(true));
     }
 
     /**
@@ -36,6 +39,8 @@ class AnnouncementPublisher
         if (! $announcement->isPublished() || ! $this->claim($announcement)) {
             return $announcement->refresh();
         }
+
+        event(new AnnouncementsChanged);
 
         try {
             $url = (string) config('services.discord.announcements_webhook_url');
@@ -58,6 +63,7 @@ class AnnouncementPublisher
                 'discord_sent_at' => now(),
                 'discord_error' => null,
             ])->save();
+            event(new AnnouncementsChanged);
         } catch (ConnectionException $e) {
             $safe = preg_replace('#/api/webhooks/\S+#', '/api/webhooks/[redacted]', $e->getMessage());
             Log::warning('Discord connection error', ['announcement_id' => $announcement->getKey(), 'detail' => $safe]);
@@ -96,6 +102,7 @@ class AnnouncementPublisher
         ]);
 
         $announcement->forceFill(['discord_status' => Status::Failed, 'discord_error' => $reason])->save();
+        event(new AnnouncementsChanged);
 
         return $announcement->refresh();
     }

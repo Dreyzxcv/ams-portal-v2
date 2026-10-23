@@ -5,7 +5,7 @@ import InputError from '@/components/input-error';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { LiveGrades } from '@/components/live-grades';
+import { LiveBatchData } from '@/components/live-grades';
 import type { AvailableTrainee, BatchMember } from '@/types/batches';
 
 type Props = {
@@ -33,7 +33,7 @@ export default function BatchesShow({ batch, members, available, can }: Props) {
     return (
         <>
             <Head title={batch.name} />
-            <LiveGrades only={['batch', 'members']} />
+            <LiveBatchData only={['batch', 'members']} />
 
             <div className="mx-auto w-full max-w-7xl space-y-4 p-4 sm:p-6">
                 <div className="flex flex-wrap items-center justify-between gap-4 rounded-3xl border bg-sky-500/10 p-6">

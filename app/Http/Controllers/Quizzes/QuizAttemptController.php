@@ -4,12 +4,14 @@ namespace App\Http\Controllers\Quizzes;
 
 use App\Enums\Role;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Quizzes\RecordQuizAttemptEventRequest;
 use App\Http\Requests\Quizzes\SaveQuizAnswersRequest;
 use App\Models\Quiz;
 use App\Models\QuizAttempt;
 use App\Services\QuizService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response as HttpResponse;
 use Illuminate\Support\Facades\Gate;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -77,6 +79,7 @@ class QuizAttemptController extends Controller
                 'expires_at' => $attempt->expires_at->toIso8601String(),
                 'answers_url' => route('quizzes.attempts.answers', $attempt),
                 'submit_url' => route('quizzes.attempts.submit', $attempt),
+                'server_time' => now()->toIso8601String(),
             ],
             'quiz' => [
                 'title' => $attempt->quiz->title,
@@ -115,5 +118,17 @@ class QuizAttemptController extends Controller
         Inertia::flash('toast', ['type' => 'success', 'message' => __('Quiz submitted.')]);
 
         return to_route('quizzes.attempts.show', $attempt);
+    }
+
+    public function recordEvent(RecordQuizAttemptEventRequest $request, QuizAttempt $attempt): HttpResponse
+    {
+        $this->quizzes->recordAttemptEvent(
+            $attempt,
+            $request->user(),
+            $request->validated('event'),
+            $request->validated('client_time'),
+        );
+
+        return response()->noContent();
     }
 }
