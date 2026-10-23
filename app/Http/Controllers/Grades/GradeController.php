@@ -30,7 +30,11 @@ class GradeController extends Controller
         }
 
         $search = trim((string) $request->query('search', ''));
-        $components = GradeComponent::query()->where('active', true)->orderBy('sequence')->get();
+        $components = GradeComponent::query()
+            ->with(['quiz' => fn ($query) => $query->withSum('questions as total_points', 'points')])
+            ->where('active', true)
+            ->orderBy('sequence')
+            ->get();
 
         $trainees = User::query()
             ->where('role', Role::Trainee->value)
@@ -60,8 +64,8 @@ class GradeController extends Controller
             'components' => $components->map(fn (GradeComponent $c) => [
                 'id' => $c->id,
                 'label' => $c->label,
-                'max_score' => $c->max_score,
-                'pass_score' => $c->pass_score,
+                'max_score' => number_format($c->effectiveMaxScore(), 2, '.', ''),
+                'pass_score' => number_format($c->effectivePassScore(), 2, '.', ''),
             ])->values(),
             'filters' => ['search' => $search],
         ]);
@@ -83,7 +87,11 @@ class GradeController extends Controller
             ->get()
             ->keyBy('component_id');
 
-        $components = GradeComponent::query()->where('active', true)->orderBy('sequence')->get();
+        $components = GradeComponent::query()
+            ->with(['quiz' => fn ($query) => $query->withSum('questions as total_points', 'points')])
+            ->where('active', true)
+            ->orderBy('sequence')
+            ->get();
 
         $rows = $components->map(function (GradeComponent $c) use ($records) {
             $record = $records->get($c->id);
@@ -91,8 +99,8 @@ class GradeController extends Controller
             return [
                 'component_id' => $c->id,
                 'label' => $c->label,
-                'max_score' => $c->max_score,
-                'pass_score' => $c->pass_score,
+                'max_score' => number_format($c->effectiveMaxScore(), 2, '.', ''),
+                'pass_score' => number_format($c->effectivePassScore(), 2, '.', ''),
                 'is_final' => $c->is_final,
                 'score' => $record?->score,
                 'passed' => $record?->score !== null ? $c->isPassing($record->score) : null,

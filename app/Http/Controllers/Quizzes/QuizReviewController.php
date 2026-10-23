@@ -22,15 +22,16 @@ class QuizReviewController extends Controller
         abort_unless($attempt->quiz_id === $quiz->id, 404);
         abort_unless($attempt->isSubmitted(), 403);
 
-        $attempt->load(['quiz.gradeComponent', 'trainee:id,name,username', 'answers.question']);
+        $attempt->load(['quiz.gradeComponent', 'quiz.questions', 'trainee:id,name,username', 'answers.question']);
+        $totalPoints = (float) $attempt->quiz->questions->sum('points');
 
         return Inertia::render('quizzes/review', [
             'quiz' => [
                 'id' => $quiz->id,
                 'title' => $quiz->title,
                 'phase' => $attempt->quiz->gradeComponent->label,
-                'max_score' => $attempt->quiz->gradeComponent->max_score,
-                'total_points' => $attempt->quiz->questions()->sum('points'),
+                'max_score' => number_format($totalPoints, 2, '.', ''),
+                'total_points' => $totalPoints,
             ],
             'trainee' => [
                 'id' => $attempt->trainee->id,

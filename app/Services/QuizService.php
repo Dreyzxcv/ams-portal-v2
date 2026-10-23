@@ -10,6 +10,7 @@ use App\Models\QuizAnswer;
 use App\Models\QuizAttempt;
 use App\Models\User;
 use App\Support\Permissions;
+use App\Models\GradeRecord;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Support\Facades\DB;
@@ -17,7 +18,7 @@ use Illuminate\Validation\ValidationException;
 
 class QuizService
 {
-    private const ELIGIBLE_COMPONENTS = ['phase_1', 'final_exam'];
+    private const ELIGIBLE_COMPONENTS = GradeComponent::QUIZ_KEYS;
 
     public function __construct(
         private readonly AuditLogger $audit,
@@ -333,7 +334,7 @@ class QuizService
             }
 
             $rawScore = (float) $attempt->auto_score + $manualScore;
-            $gradeScore = round(($rawScore / $totalPoints) * (float) $quiz->gradeComponent->max_score, 2);
+            $gradeScore = round($rawScore, 2);
 
             $this->grades->save(
                 $reviewer,
@@ -457,11 +458,7 @@ class QuizService
             $changes = ['auto_score' => number_format($autoScore, 2, '.', '')];
 
             if ($attempt->isReviewed()) {
-                $finalScore = round(
-                    (($autoScore + $manualScore) / $totalPoints)
-                        * (float) $quiz->gradeComponent->max_score,
-                    2,
-                );
+                $finalScore = round($autoScore + $manualScore, 2);
                 $changes['manual_score'] = number_format($manualScore, 2, '.', '');
                 $changes['final_score'] = number_format($finalScore, 2, '.', '');
 

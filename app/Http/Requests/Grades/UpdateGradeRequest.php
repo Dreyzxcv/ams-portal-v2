@@ -19,7 +19,7 @@ class UpdateGradeRequest extends FormRequest
     /** @return array<string, mixed> */
     public function rules(): array
     {
-        $max = (float) $this->route('component')->max_score;
+        $max = $this->route('component')->effectiveMaxScore();
 
         return [
             'score' => ['required', 'numeric', 'min:0', 'max:'.$max, 'decimal:0,2'],

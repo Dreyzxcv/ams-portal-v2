@@ -64,11 +64,15 @@ class DashboardService
         }
 
         if (Permissions::allows($user, Permissions::GRADES_VIEW_ALL)) {
-            $final = GradeComponent::where('is_final', true)->where('active', true)->first();
+            $final = GradeComponent::query()
+                ->with(['quiz' => fn ($query) => $query->withSum('questions as total_points', 'points')])
+                ->where('is_final', true)
+                ->where('active', true)
+                ->first();
 
             $passedFinal = $final === null ? 0 : GradeRecord::query()
                 ->where('component_id', $final->id)
-                ->where('score', '>=', $final->pass_score)
+                ->where('score', '>=', $final->effectivePassScore())
                 ->count();
 
             $groups[] = [
@@ -154,7 +158,10 @@ class DashboardService
         $batch = $user->activeBatchAssignment()->with('batch:id,name,starts_on')->first()?->batch;
         $progress = TraineeProgress::find($user->id);
 
-        $components = GradeComponent::where('active', true)->get();
+        $components = GradeComponent::query()
+            ->with(['quiz' => fn ($query) => $query->withSum('questions as total_points', 'points')])
+            ->where('active', true)
+            ->get();
         $records = GradeRecord::where('trainee_id', $user->id)->get()->keyBy('component_id');
 
         $entered = $components->filter(fn ($c) => $records->get($c->id)?->score !== null)->count();
@@ -185,7 +192,7 @@ class DashboardService
                     return [
                         'name' => $c->name ?? $c->label ?? $c->title ?? $c->code ?? "Component {$c->id}",
                         'score' => $score === null ? null : (float) $score,
-                        'max' => $c->max_score !== null ? (float) $c->max_score : null,
+                        'max' => $c->effectiveMaxScore(),
                         'passed' => $score === null ? null : $c->isPassing($score),
                     ];
                 })->values(),
