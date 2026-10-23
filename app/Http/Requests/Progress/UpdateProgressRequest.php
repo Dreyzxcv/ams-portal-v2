@@ -12,19 +12,10 @@ class UpdateProgressRequest extends FormRequest
         return Permissions::allows($this->user(), Permissions::PROGRESS_MANAGE);
     }
 
-    protected function prepareForValidation(): void
-    {
-        if ($this->input('started_on') === '') {
-            $this->merge(['started_on' => null]);
-        }
-    }
-
-    /** @return array<string, mixed> */
     public function rules(): array
     {
         return [
             'current_phase' => ['required', 'integer', 'min:1', 'max:'.(int) config('ams.progress.max_phase')],
-            'started_on' => ['nullable', 'date'],
         ];
     }
 }

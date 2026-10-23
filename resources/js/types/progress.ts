@@ -2,7 +2,7 @@ export type ProgressRow = {
     id: number;
     name: string;
     username: string;
-    current_phase: number | null;
+    current_phase: string | null;
     started_on: string | null;
     remaining_days: number | null;
     batch_ended: boolean;

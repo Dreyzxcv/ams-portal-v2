@@ -24,7 +24,8 @@ export type ActivityItem = {
 
 export type TraineeSummary = {
     batch: string | null;
-    current_phase: number | null;
+    current_phase: string | null;
+    current_phase_title: string | null;
     started_on: string | null;
     components?: TraineeComponent[];
     grades_total: number;

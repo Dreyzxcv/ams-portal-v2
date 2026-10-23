@@ -15,6 +15,7 @@ use App\Models\TraineeProgress;
 use App\Models\User;
 use App\Models\Violation;
 use App\Support\Permissions;
+use App\Support\CurrentPhase;
 use Illuminate\Support\Carbon;
 
 class DashboardService
@@ -160,8 +161,10 @@ class DashboardService
         $components = GradeComponent::query()
             ->with(['quiz' => fn ($query) => $query->withSum('questions as total_points', 'points')])
             ->where('active', true)
+            ->orderBy('sequence')
             ->get();
         $records = GradeRecord::where('trainee_id', $user->id)->get()->keyBy('component_id');
+        $phase = CurrentPhase::resolve($components, $records);
 
         $entered = $components->filter(fn ($c) => $records->get($c->id)?->score !== null)->count();
         $passed = $components->filter(function ($c) use ($records) {
@@ -183,7 +186,8 @@ class DashboardService
             'batches' => null,
             'trainee' => [
                 'batch' => $batch?->name,
-                'current_phase' => $progress?->current_phase,
+                'current_phase' => $phase['short'] ?? null,
+                'current_phase_title' => $phase['title'] ?? null,
                 'started_on' => $batch?->starts_on?->toDateString() ?? $progress?->started_on?->toDateString(),
                 'components' => $components->sortBy('id')->map(function ($c) use ($records) {
                     $score = $records->get($c->id)?->score;

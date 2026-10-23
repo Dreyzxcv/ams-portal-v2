@@ -9,6 +9,7 @@ use App\Models\User;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 use App\Events\BatchAssignmentChanged;
+use App\Models\TraineeProgress;
 
 class BatchService
 {
@@ -110,6 +111,11 @@ class BatchService
                 'trainee_id' => $trainee->id,
                 'from_batch_id' => $current?->batch_id,
             ]);
+
+            TraineeProgress::firstOrCreate(
+                ['trainee_id' => $trainee->id],
+                ['current_phase' => 1, 'updated_by' => $actor->id],
+            );
 
             BatchAssignmentChanged::dispatch($trainee->id);
         });

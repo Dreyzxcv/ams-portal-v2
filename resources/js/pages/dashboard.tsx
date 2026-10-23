@@ -616,7 +616,7 @@ function TraineeView({ trainee }: { trainee: TraineeSummary }) {
                                                 {trainee.current_phase ?? '—'}
                                             </div>
                                             <div className="text-muted-foreground text-xs">
-                                                Current phase
+                                                {trainee.current_phase_title ?? 'Current phase'}
                                             </div>
                                         </div>
                                         <div className="bg-muted/60 rounded-xl p-3 text-center">

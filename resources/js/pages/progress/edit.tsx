@@ -3,7 +3,6 @@ import { ArrowLeft, CalendarClock, Clock } from 'lucide-react';
 import ProgressController from '@/actions/App/Http/Controllers/Progress/ProgressController';
 import InputError from '@/components/input-error';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 
 type Props = {
@@ -15,6 +14,7 @@ type Props = {
         updated_at: string | null;
         updated_by: string | null;
     };
+    batch_starts_on: string | null;
     batch_ends_on: string | null;
     remaining_days: number | null;
     batch_ended: boolean;
@@ -35,7 +35,7 @@ function initials(name: string) {
         .join('');
 }
 
-export default function ProgressEdit({ trainee, progress, batch_ends_on, remaining_days, batch_ended, max_phase }: Props) {
+export default function ProgressEdit({ trainee, progress, batch_starts_on, batch_ends_on, remaining_days, batch_ended, max_phase }: Props) {
     const phases = Array.from({ length: max_phase }, (_, i) => i + 1);
 
     return (
@@ -122,16 +122,11 @@ export default function ProgressEdit({ trainee, progress, batch_ends_on, remaini
                                     <InputError message={errors.current_phase} />
                                 </div>
 
-                                <div className="grid gap-2">
-                                    <Label htmlFor="started_on">Start date</Label>
-                                    <Input
-                                        id="started_on"
-                                        name="started_on"
-                                        type="date"
-                                        defaultValue={progress.started_on ?? ''}
-                                        className="rounded-xl"
-                                    />
-                                    <InputError message={errors.started_on} />
+                                <div className="grid gap-1">
+                                    <Label>Start date</Label>
+                                    <p className="text-sm text-muted-foreground">
+                                        {batch_starts_on ?? 'Not set'} (from the trainee&apos;s batch)
+                                    </p>
                                 </div>
 
                                 <div className="flex items-center gap-3 pt-1">

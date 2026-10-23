@@ -8,6 +8,8 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Progress\UpdateProgressRequest;
 use App\Models\TraineeProgress;
 use App\Models\User;
+use App\Models\GradeComponent;
+use App\Support\CurrentPhase;
 use App\Services\ProgressService;
 use App\Support\Permissions;
 use Illuminate\Http\RedirectResponse;
@@ -30,10 +32,12 @@ class ProgressController extends Controller
 
         $search = trim((string) $request->query('search', ''));
 
+        $components = GradeComponent::query()->where('active', true)->orderBy('sequence')->get();
+
         $trainees = User::query()
             ->where('role', Role::Trainee->value)
             ->where('status', UserStatus::Active->value)
-            ->with(['progress.updater:id,name', 'activeBatchAssignment.batch:id,ends_on'])
+            ->with(['progress.updater:id,name', 'gradeRecords', 'activeBatchAssignment.batch:id,starts_on,ends_on'])
             ->when($search !== '', function ($query) use ($search) {
                 $term = '%'.addcslashes(mb_strtolower($search), '%_\\').'%';
                 $query->where(function ($q) use ($term) {
@@ -49,8 +53,9 @@ class ProgressController extends Controller
                 'id' => $t->id,
                 'name' => $t->name,
                 'username' => $t->username,
-                'current_phase' => $t->progress?->current_phase,
-                'started_on' => $t->progress?->started_on?->toDateString(),
+                'current_phase' => CurrentPhase::resolve($components, $t->gradeRecords->keyBy('component_id'))['title'] ?? null,
+                'started_on' => $t->activeBatchAssignment?->batch?->starts_on?->toDateString()
+                    ?? $t->progress?->started_on?->toDateString(),
                 'remaining_days' => $t->activeBatchAssignment?->batch?->daysLeft(),
                 'batch_ended' => $t->activeBatchAssignment?->batch?->hasEnded() ?? false,
                 'updated_at' => $t->progress?->updated_at?->toIso8601String(),
@@ -70,7 +75,7 @@ class ProgressController extends Controller
         abort_unless($trainee->role === Role::Trainee, 404);
 
         $progress = TraineeProgress::with('updater:id,name')->find($trainee->id);
-        $batch = $trainee->activeBatchAssignment()->with('batch:id,ends_on')->first()?->batch;
+        $batch = $trainee->activeBatchAssignment()->with('batch:id,starts_on,ends_on')->first()?->batch;
 
         return Inertia::render('progress/edit', [
             'trainee' => ['id' => $trainee->id, 'name' => $trainee->name, 'username' => $trainee->username],
@@ -81,6 +86,7 @@ class ProgressController extends Controller
                 'updated_at' => $progress?->updated_at?->toIso8601String(),
                 'updated_by' => $progress?->updater?->name,
             ],
+            'batch_starts_on' => $batch?->starts_on?->toDateString(),
             'batch_ends_on' => $batch?->ends_on?->toDateString(),
             'remaining_days' => $batch?->daysLeft(),
             'batch_ended' => $batch?->hasEnded() ?? false,

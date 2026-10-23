@@ -119,7 +119,7 @@ export default function ProgressIndex({ trainees, filters, max_phase }: Props) {
                                         <td className="px-4 py-3">
                                             {t.current_phase != null ? (
                                                 <span className={`${pill} bg-sky-500/10 text-sky-700 dark:text-sky-300`}>
-                                                    Phase {t.current_phase}
+                                                    {t.current_phase}
                                                 </span>
                                             ) : (
                                                 <span className={`${pill} bg-muted text-muted-foreground`}>Not set</span>
