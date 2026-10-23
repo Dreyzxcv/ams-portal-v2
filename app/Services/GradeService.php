@@ -67,4 +67,39 @@ class GradeService
             ]);
         });
     }
+
+    public function clear(User $actor, User $trainee, GradeComponent $component, string $reason): bool
+    {
+        return DB::transaction(function () use ($actor, $trainee, $component, $reason): bool {
+            $record = GradeRecord::query()
+                ->where('trainee_id', $trainee->id)
+                ->where('component_id', $component->id)
+                ->lockForUpdate()
+                ->first();
+
+            if ($record === null || $record->score === null) {
+                return false;
+            }
+
+            $old = $record->score;
+
+            $record->forceFill(['score' => null, 'graded_by' => null, 'graded_at' => null])->save();
+
+            GradeRevision::create([
+                'grade_record_id' => $record->id,
+                'old_score' => $old,
+                'new_score' => null,
+                'changed_by' => $actor->id,
+                'changed_at' => now(),
+                'reason' => $reason,
+            ]);
+
+            $this->audit->record('grade.cleared', $actor, 'user', $trainee->id, [
+                'component' => $component->key,
+                'old' => $old,
+            ]);
+
+            return true;
+        });
+    }
 }

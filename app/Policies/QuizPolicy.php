@@ -47,4 +47,9 @@ class QuizPolicy
                 ->whereNull('revoked_at')
                 ->exists();
     }
+
+    public function resetAttempt(User $user, ?Quiz $quiz = null): bool
+    {
+        return Permissions::allows($user, Permissions::QUIZZES_RESET_ATTEMPTS);
+    }
 }

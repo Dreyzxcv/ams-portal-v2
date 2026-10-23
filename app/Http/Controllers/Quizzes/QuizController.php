@@ -96,7 +96,7 @@ class QuizController extends Controller
         return to_route('quizzes.show', $quiz);
     }
 
-    public function show(Quiz $quiz): Response
+    public function show(Request $request, Quiz $quiz): Response
     {
         Gate::authorize('manage', $quiz);
 
@@ -151,6 +151,7 @@ class QuizController extends Controller
                 'auto_score' => $attempt->auto_score,
                 'final_score' => $attempt->final_score,
             ])->values(),
+            'can' => ['reset_attempts' => Permissions::allows($request->user(), Permissions::QUIZZES_RESET_ATTEMPTS)],
         ]);
     }
 
@@ -195,6 +196,18 @@ class QuizController extends Controller
         $this->quizzes->grantAccess($request->user(), $quiz, $trainee);
 
         Inertia::flash('toast', ['type' => 'success', 'message' => __('Quiz access granted.')]);
+
+        return to_route('quizzes.show', $quiz);
+    }
+
+    public function resetAttempt(Request $request, Quiz $quiz, QuizAttempt $attempt): RedirectResponse
+    {
+        Gate::authorize('resetAttempt', $quiz);
+        abort_unless($attempt->quiz_id === $quiz->id, 404);
+
+        $this->quizzes->resetAttempt($request->user(), $quiz, $attempt);
+
+        Inertia::flash('toast', ['type' => 'success', 'message' => __('Quiz attempt reset. The trainee can retake the quiz.')]);
 
         return to_route('quizzes.show', $quiz);
     }

@@ -28,5 +28,8 @@ Route::middleware(['auth'])->prefix('quizzes')->name('quizzes.')->group(function
     Route::put('{quiz}/attempts/{attempt}/review', [QuizReviewController::class, 'update'])
         ->scopeBindings()
         ->name('attempts.review.update');
+    Route::delete('{quiz}/attempts/{attempt}', [QuizController::class, 'resetAttempt'])
+        ->scopeBindings()
+        ->name('attempts.reset');
     Route::get('{quiz}', [QuizController::class, 'show'])->name('show');
 });

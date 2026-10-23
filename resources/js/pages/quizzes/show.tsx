@@ -1,11 +1,23 @@
 import { Form, Head, Link } from '@inertiajs/react';
+import { useState } from 'react';
 import {
     ArrowLeft,
     ClipboardList,
     Pencil,
+    RotateCcw,
     UserPlus,
     Users,
 } from 'lucide-react';
+import {
+    Dialog,
+    DialogClose,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+    DialogTrigger,
+} from '@/components/ui/dialog';
 import QuizController from '@/actions/App/Http/Controllers/Quizzes/QuizController';
 import QuizReviewController from '@/actions/App/Http/Controllers/Quizzes/QuizReviewController';
 import InputError from '@/components/input-error';
@@ -40,20 +52,87 @@ type Props = {
         duration_minutes: number;
         instructions: string;
         question_count: number;
-        total_points: string;
+        total_points: string;    
     };
     accesses: AccessRow[];
     available_trainees: { id: number; name: string; username: string }[];
     attempts: AttemptRow[];
+    can: { reset_attempts: boolean };
 };
 
 const card = 'bg-card overflow-hidden rounded-2xl border shadow-xs';
+
+function ResetAttemptButton({
+    quizId,
+    attempt,
+}: {
+    quizId: number;
+    attempt: AttemptRow;
+}) {
+    const [open, setOpen] = useState(false);
+
+    return (
+        <Dialog open={open} onOpenChange={setOpen}>
+            <DialogTrigger asChild>
+                <Button variant="outline" size="sm" className="rounded-xl">
+                    <RotateCcw aria-hidden="true" />
+                    Reset
+                </Button>
+            </DialogTrigger>
+            <DialogContent>
+                <Form
+                    {...QuizController.resetAttempt.form({
+                        quiz: quizId,
+                        attempt: attempt.id,
+                    })}
+                    options={{ preserveScroll: true }}
+                    onSuccess={() => setOpen(false)}
+                    className="space-y-4"
+                >
+                    {({ processing }) => (
+                        <>
+                            <DialogHeader>
+                                <DialogTitle>
+                                    Reset attempt for {attempt.name}?
+                                </DialogTitle>
+                                <DialogDescription>
+                                    This deletes the trainee&apos;s answers and
+                                    attempt so they can retake the quiz.
+                                    {attempt.reviewed_at &&
+                                        ' Their recorded grade for this phase will be cleared. The change stays in the grade history.'}
+                                    {!attempt.submitted_at &&
+                                        ' The attempt in progress will be invalidated.'}{' '}
+                                    This cannot be undone.
+                                </DialogDescription>
+                            </DialogHeader>
+                            <DialogFooter className="gap-2">
+                                <DialogClose asChild>
+                                    <Button type="button" variant="ghost">
+                                        Cancel
+                                    </Button>
+                                </DialogClose>
+                                <Button
+                                    type="submit"
+                                    variant="destructive"
+                                    disabled={processing}
+                                >
+                                    Reset attempt
+                                </Button>
+                            </DialogFooter>
+                        </>
+                    )}
+                </Form>
+            </DialogContent>
+        </Dialog>
+    );
+}
 
 export default function QuizzesShow({
     quiz,
     accesses,
     available_trainees,
     attempts,
+    can,
 }: Props) {
     return (
         <>
@@ -275,28 +354,28 @@ export default function QuizzesShow({
                                                     : `${Number(attempt.auto_score)} / ${Number(quiz.total_points)}`}
                                             </td>
                                             <td className="px-5 py-3 text-right">
-                                                {attempt.submitted_at && (
-                                                    <Button
-                                                        asChild
-                                                        variant="outline"
-                                                        size="sm"
-                                                        className="rounded-xl"
-                                                    >
-                                                        <Link
-                                                            href={QuizReviewController.show(
-                                                                {
-                                                                    quiz: quiz.id,
-                                                                    attempt:
-                                                                        attempt.id,
-                                                                },
-                                                            )}
+                                                <div className="flex justify-end gap-2">
+                                                    {attempt.submitted_at && (
+                                                        <Button
+                                                            asChild
+                                                            variant="outline"
+                                                            size="sm"
+                                                            className="rounded-xl"
                                                         >
-                                                            {attempt.reviewed_at
-                                                                ? 'View review'
-                                                                : 'Review'}
-                                                        </Link>
-                                                    </Button>
-                                                )}
+                                                            <Link
+                                                                href={QuizReviewController.show({
+                                                                    quiz: quiz.id,
+                                                                    attempt: attempt.id,
+                                                                })}
+                                                            >
+                                                                {attempt.reviewed_at ? 'View review' : 'Review'}
+                                                            </Link>
+                                                        </Button>
+                                                    )}
+                                                    {can.reset_attempts && (
+                                                        <ResetAttemptButton quizId={quiz.id} attempt={attempt} />
+                                                    )}
+                                                </div>
                                             </td>
                                         </tr>
                                     ))}

@@ -33,6 +33,8 @@ final class Permissions
 
     public const ANNOUNCEMENTS_MANAGE = 'announcements.manage';
 
+    public const QUIZZES_RESET_ATTEMPTS = 'quizzes.reset_attempts';
+
     /** @return list<string> */
     public static function all(): array
     {
@@ -41,6 +43,7 @@ final class Permissions
             self::GRADES_VIEW_ALL,
             self::GRADES_MANAGE,
             self::QUIZZES_MANAGE,
+            self::QUIZZES_RESET_ATTEMPTS,
             self::VIOLATIONS_MANAGE,
             self::PROGRESS_MANAGE,
             self::BATCHES_VIEW,

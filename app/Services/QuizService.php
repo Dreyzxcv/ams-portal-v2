@@ -553,6 +553,49 @@ class QuizService
         }
     }
 
+    public function resetAttempt(User $actor, Quiz $quiz, QuizAttempt $attempt): void
+    {
+        if (! Permissions::allows($actor, Permissions::QUIZZES_RESET_ATTEMPTS)) {
+            abort(403);
+        }
+
+        DB::transaction(function () use ($actor, $quiz, $attempt): void {
+            Quiz::query()->whereKey($quiz->id)->lockForUpdate()->firstOrFail();
+            $attempt = QuizAttempt::query()
+                ->whereKey($attempt->id)
+                ->where('quiz_id', $quiz->id)
+                ->lockForUpdate()
+                ->firstOrFail();
+
+            $status = $attempt->isReviewed() ? 'reviewed' : ($attempt->isSubmitted() ? 'submitted' : 'in_progress');
+            $gradeCleared = false;
+
+            if ($attempt->isReviewed()) {
+                $component = GradeComponent::query()->where('key', $quiz->grade_component_key)->firstOrFail();
+                $gradeCleared = $this->grades->clear(
+                    $actor,
+                    $attempt->trainee,
+                    $component,
+                    'Quiz attempt reset: '.$quiz->title,
+                );
+            }
+
+            $details = [
+                'trainee_id' => $attempt->trainee_id,
+                'previous_status' => $status,
+                'auto_score' => $attempt->auto_score,
+                'manual_score' => $attempt->manual_score,
+                'final_score' => $attempt->final_score,
+                'grade_cleared' => $gradeCleared,
+            ];
+
+            $attempt->answers()->delete();
+            $attempt->delete();
+
+            $this->audit->record('quiz.attempt_reset', $actor, 'quiz_attempt', $attempt->id, $details);
+        });
+    }
+
     private function submitLockedAttempt(QuizAttempt $attempt, ?CarbonImmutable $now = null): void
     {
         $quiz = $attempt->quiz;
