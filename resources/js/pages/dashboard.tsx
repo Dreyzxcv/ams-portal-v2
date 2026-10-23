@@ -39,6 +39,7 @@ import type {
 import CertificateController from '@/actions/App/Http/Controllers/Certificates/CertificateController';
 import FilePreview from '@/components/file-preview';
 import { Button } from '@/components/ui/button';
+import { LiveBatchAssignment } from '@/components/live-batch-assignment';
 
 type Props = {
     mode: 'staff' | 'trainee';
@@ -1388,6 +1389,7 @@ export default function Dashboard({
             <div className="mx-auto w-full max-w-7xl space-y-4 p-4 sm:p-6">
                 {mode === 'trainee' ? (
                     <>
+                        <LiveBatchAssignment />
                         <Hero
                             deco={Stethoscope}
                             title={name}

@@ -8,6 +8,7 @@ use App\Models\BatchAssignment;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
+use App\Events\BatchAssignmentChanged;
 
 class BatchService
 {
@@ -106,6 +107,8 @@ class BatchService
                 'trainee_id' => $trainee->id,
                 'from_batch_id' => $current?->batch_id,
             ]);
+
+            BatchAssignmentChanged::dispatch($trainee->id);
         });
     }
 
@@ -122,6 +125,8 @@ class BatchService
                 'trainee_id' => $assignment->user_id,
                 'reason' => 'removed',
             ]);
+
+            BatchAssignmentChanged::dispatch($assignment->user_id);
         });
     }
 }
