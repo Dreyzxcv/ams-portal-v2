@@ -9,7 +9,7 @@ import { LiveBatchData } from '@/components/live-grades';
 import type { AvailableTrainee, BatchMember } from '@/types/batches';
 
 type Props = {
-    batch: { id: number; name: string; starts_on: string | null };
+    batch: { id: number; name: string; starts_on: string | null; ends_on: string | null };
     members: BatchMember[];
     available: AvailableTrainee[];
     can: { update: boolean; delete: boolean; assign: boolean };
@@ -103,6 +103,18 @@ export default function BatchesShow({ batch, members, available, can }: Props) {
                                             className="rounded-xl"
                                         />
                                         <InputError message={errors.starts_on} />
+                                    </div>
+                                    <div className="grid gap-2">
+                                        <Label htmlFor="ends_on">End date</Label>
+                                        <Input
+                                            id="ends_on"
+                                            name="ends_on"
+                                            type="date"
+                                            defaultValue={batch.ends_on ?? ''}
+                                            disabled={!can.update}
+                                            className="rounded-xl"
+                                        />
+                                        <InputError message={errors.ends_on} />
                                     </div>
                                     {can.update && (
                                         <Button

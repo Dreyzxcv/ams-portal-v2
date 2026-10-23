@@ -4,6 +4,7 @@ namespace App\Http\Requests\Batches;
 
 use App\Models\Batch;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class StoreBatchRequest extends FormRequest
 {
@@ -23,6 +24,19 @@ class StoreBatchRequest extends FormRequest
         return [
             'name' => ['required', 'string', 'max:100', $this->uniqueName(null)],
             'starts_on' => ['nullable', 'date'],
+            'ends_on' => [
+                'nullable',
+                'date',
+                Rule::when($this->filled('starts_on'), ['after_or_equal:starts_on']),
+            ],
+        ];
+    }
+
+    /** @return array<string, string> */
+    public function messages(): array
+    {
+        return [
+            'ends_on.after_or_equal' => 'The end date must be on or after the start date.',
         ];
     }
 

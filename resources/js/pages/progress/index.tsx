@@ -1,5 +1,5 @@
 import { Head, Link, router } from '@inertiajs/react';
-import { Hourglass, Info, Search } from 'lucide-react';
+import { Hourglass, Search } from 'lucide-react';
 import { useState } from 'react';
 import ProgressController from '@/actions/App/Http/Controllers/Progress/ProgressController';
 import { Button } from '@/components/ui/button';
@@ -11,7 +11,6 @@ type Props = {
     trainees: Paginated<ProgressRow>;
     filters: { search: string };
     max_phase: number;
-    days_configured: boolean;
 };
 
 function initials(name: string) {
@@ -25,7 +24,7 @@ function initials(name: string) {
 
 const pill = 'inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium';
 
-export default function ProgressIndex({ trainees, filters, max_phase, days_configured }: Props) {
+export default function ProgressIndex({ trainees, filters, max_phase }: Props) {
     const [search, setSearch] = useState(filters.search);
 
     return (
@@ -44,7 +43,7 @@ export default function ProgressIndex({ trainees, filters, max_phase, days_confi
                         <div>
                             <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">Progress</h1>
                             <p className="text-muted-foreground mt-1 text-sm">
-                                Current phase (1 to {max_phase}) and estimated days left per active trainee
+                                Current phase (1 to {max_phase}) and days left based on each trainee&apos;s batch end date
                             </p>
                         </div>
                     </div>
@@ -79,13 +78,6 @@ export default function ProgressIndex({ trainees, filters, max_phase, days_confi
                         </Button>
                     </form>
                 </div>
-
-                {!days_configured && (
-                    <div className="flex items-start gap-3 rounded-2xl border border-amber-500/25 bg-amber-500/5 px-4 py-3 text-sm text-amber-700 dark:text-amber-400">
-                        <Info aria-hidden="true" className="mt-0.5 size-4 shrink-0" />
-                        Remaining days are not available yet because the total program length has not been configured.
-                    </div>
-                )}
 
                 <div className="bg-card overflow-hidden rounded-2xl border shadow-xs">
                     <div className="overflow-x-auto">
@@ -137,7 +129,9 @@ export default function ProgressIndex({ trainees, filters, max_phase, days_confi
                                             {t.started_on ?? 'Not set'}
                                         </td>
                                         <td className="px-4 py-3">
-                                            {t.remaining_days != null ? (
+                                            {t.batch_ended ? (
+                                                <span className="text-muted-foreground">Ended</span>
+                                            ) : t.remaining_days != null ? (
                                                 <span className="font-semibold tabular-nums">{t.remaining_days}</span>
                                             ) : (
                                                 <span className="text-muted-foreground">-</span>

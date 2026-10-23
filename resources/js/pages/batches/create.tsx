@@ -58,6 +58,17 @@ export default function BatchesCreate() {
                                     <InputError message={errors.starts_on} />
                                 </div>
 
+                                <div className="grid gap-2">
+                                    <Label htmlFor="ends_on">End date (optional)</Label>
+                                    <Input
+                                        id="ends_on"
+                                        name="ends_on"
+                                        type="date"
+                                        className="rounded-xl"
+                                    />
+                                    <InputError message={errors.ends_on} />
+                                </div>
+
                                 <div className="flex items-center gap-3 pt-1">
                                     <Button
                                         type="submit"

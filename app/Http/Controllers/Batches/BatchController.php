@@ -42,6 +42,9 @@ class BatchController extends Controller
                 'id' => $batch->id,
                 'name' => $batch->name,
                 'starts_on' => $batch->starts_on?->toDateString(),
+                'ends_on' => $batch->ends_on?->toDateString(),
+                'days_left' => $batch->daysLeft(),
+                'is_ended' => $batch->hasEnded(),
                 'trainee_count' => $batch->active_assignments_count,
             ]);
 
@@ -112,6 +115,7 @@ class BatchController extends Controller
                 'id' => $batch->id,
                 'name' => $batch->name,
                 'starts_on' => $batch->starts_on?->toDateString(),
+                'ends_on' => $batch->ends_on?->toDateString(),
             ],
             'members' => $members,
             'available' => $available,

@@ -10,7 +10,6 @@ use App\Models\TraineeProgress;
 use App\Models\User;
 use App\Services\ProgressService;
 use App\Support\Permissions;
-use App\Support\ProgramSchedule;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -34,7 +33,7 @@ class ProgressController extends Controller
         $trainees = User::query()
             ->where('role', Role::Trainee->value)
             ->where('status', UserStatus::Active->value)
-            ->with('progress.updater:id,name')
+            ->with(['progress.updater:id,name', 'activeBatchAssignment.batch:id,ends_on'])
             ->when($search !== '', function ($query) use ($search) {
                 $term = '%'.addcslashes(mb_strtolower($search), '%_\\').'%';
                 $query->where(function ($q) use ($term) {
@@ -52,7 +51,8 @@ class ProgressController extends Controller
                 'username' => $t->username,
                 'current_phase' => $t->progress?->current_phase,
                 'started_on' => $t->progress?->started_on?->toDateString(),
-                'remaining_days' => ProgramSchedule::remainingDays($t->progress?->started_on),
+                'remaining_days' => $t->activeBatchAssignment?->batch?->daysLeft(),
+                'batch_ended' => $t->activeBatchAssignment?->batch?->hasEnded() ?? false,
                 'updated_at' => $t->progress?->updated_at?->toIso8601String(),
                 'updated_by' => $t->progress?->updater?->name,
             ]);
@@ -61,7 +61,6 @@ class ProgressController extends Controller
             'trainees' => $trainees,
             'filters' => ['search' => $search],
             'max_phase' => (int) config('ams.progress.max_phase'),
-            'days_configured' => config('ams.progress.program_days') !== null,
         ]);
     }
 
@@ -71,6 +70,7 @@ class ProgressController extends Controller
         abort_unless($trainee->role === Role::Trainee, 404);
 
         $progress = TraineeProgress::with('updater:id,name')->find($trainee->id);
+        $batch = $trainee->activeBatchAssignment()->with('batch:id,ends_on')->first()?->batch;
 
         return Inertia::render('progress/edit', [
             'trainee' => ['id' => $trainee->id, 'name' => $trainee->name, 'username' => $trainee->username],
@@ -81,8 +81,9 @@ class ProgressController extends Controller
                 'updated_at' => $progress?->updated_at?->toIso8601String(),
                 'updated_by' => $progress?->updater?->name,
             ],
-            'remaining_days' => ProgramSchedule::remainingDays($progress?->started_on),
-            'days_configured' => config('ams.progress.program_days') !== null,
+            'batch_ends_on' => $batch?->ends_on?->toDateString(),
+            'remaining_days' => $batch?->daysLeft(),
+            'batch_ended' => $batch?->hasEnded() ?? false,
             'max_phase' => (int) config('ams.progress.max_phase'),
         ]);
     }

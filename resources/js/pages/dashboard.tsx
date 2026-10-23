@@ -620,7 +620,9 @@ function TraineeView({ trainee }: { trainee: TraineeSummary }) {
                                         </div>
                                         <div className="bg-muted/60 rounded-xl p-3 text-center">
                                             <div className="text-2xl font-semibold text-amber-600 tabular-nums dark:text-amber-400">
-                                                {trainee.remaining_days ?? '—'}
+                                                {trainee.batch_ended
+                                                    ? 'Ended'
+                                                    : (trainee.remaining_days ?? '—')}
                                             </div>
                                             <div className="text-muted-foreground text-xs">
                                                 Days left

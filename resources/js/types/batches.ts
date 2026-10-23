@@ -2,6 +2,9 @@ export type BatchRow = {
     id: number;
     name: string;
     starts_on: string | null;
+    ends_on: string | null;
+    days_left: number | null;
+    is_ended: boolean;
     trainee_count: number;
 };
 

@@ -10,11 +10,28 @@ class Batch extends Model
 {
     use SoftDeletes;
 
-    protected $fillable = ['legacy_id', 'name', 'starts_on'];
+    protected $fillable = ['legacy_id', 'name', 'starts_on', 'ends_on'];
 
     protected function casts(): array
     {
-        return ['starts_on' => 'date'];
+        return [
+            'starts_on' => 'date',
+            'ends_on' => 'date',
+        ];
+    }
+
+    public function daysLeft(): ?int
+    {
+        if ($this->ends_on === null) {
+            return null;
+        }
+
+        return max(0, (int) today()->diffInDays($this->ends_on, false));
+    }
+
+    public function hasEnded(): bool
+    {
+        return $this->ends_on?->isBefore(today()) ?? false;
     }
 
     public function assignments(): HasMany

@@ -15,7 +15,6 @@ use App\Models\TraineeProgress;
 use App\Models\User;
 use App\Models\Violation;
 use App\Support\Permissions;
-use App\Support\ProgramSchedule;
 use Illuminate\Support\Carbon;
 
 class DashboardService
@@ -155,7 +154,7 @@ class DashboardService
     /** @return array<string, mixed> */
     private function trainee(User $user): array
     {
-        $batch = $user->activeBatchAssignment()->with('batch:id,name,starts_on')->first()?->batch;
+        $batch = $user->activeBatchAssignment()->with('batch:id,name,starts_on,ends_on')->first()?->batch;
         $progress = TraineeProgress::find($user->id);
 
         $components = GradeComponent::query()
@@ -180,7 +179,7 @@ class DashboardService
         return [
             'mode' => 'trainee',
             'groups' => [],
-            'activity' => null,   
+            'activity' => null,
             'batches' => null,
             'trainee' => [
                 'batch' => $batch?->name,
@@ -204,7 +203,8 @@ class DashboardService
                 'certificate_mime' => $certificate?->file?->mime_type,
                 'certificate_number' => $certificate?->certificate_number,
                 'certificate_issued_at' => $certificate?->issued_at?->toDateString(),
-                'remaining_days' => ProgramSchedule::remainingDays($progress?->started_on),
+                'remaining_days' => $batch?->daysLeft(),
+                'batch_ended' => $batch?->hasEnded() ?? false,
                 'trend' => null,
             ],
         ];

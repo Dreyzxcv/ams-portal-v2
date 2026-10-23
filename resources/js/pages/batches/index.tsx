@@ -85,6 +85,8 @@ export default function BatchesIndex({ batches, filters, can }: Props) {
                                 <tr>
                                     <th className="px-5 py-3 font-medium">Batch</th>
                                     <th className="px-4 py-3 font-medium">Start date</th>
+                                    <th className="px-4 py-3 font-medium">End date</th>
+                                    <th className="px-4 py-3 font-medium">Days left</th>
                                     <th className="px-4 py-3 font-medium">Trainees</th>
                                     <th className="px-5 py-3" />
                                 </tr>
@@ -93,7 +95,7 @@ export default function BatchesIndex({ batches, filters, can }: Props) {
                                 {batches.data.length === 0 && (
                                     <tr>
                                         <td
-                                            colSpan={4}
+                                            colSpan={6}
                                             className="text-muted-foreground px-5 py-12 text-center"
                                         >
                                             No batches found.
@@ -120,6 +122,18 @@ export default function BatchesIndex({ batches, filters, can }: Props) {
                                         </td>
                                         <td className="text-muted-foreground px-4 py-3">
                                             {batch.starts_on ?? 'Not set'}
+                                        </td>
+                                        <td className="text-muted-foreground px-4 py-3">
+                                            {batch.ends_on ?? 'Not set'}
+                                        </td>
+                                        <td className="px-4 py-3">
+                                            {batch.is_ended ? (
+                                                <span className="text-muted-foreground">Ended</span>
+                                            ) : batch.days_left != null ? (
+                                                <span className="font-semibold tabular-nums">{batch.days_left}</span>
+                                            ) : (
+                                                <span className="text-muted-foreground">-</span>
+                                            )}
                                         </td>
                                         <td className="px-4 py-3">
                                             <span className="bg-muted inline-flex min-w-8 justify-center rounded-full px-2.5 py-1 text-xs font-medium tabular-nums">

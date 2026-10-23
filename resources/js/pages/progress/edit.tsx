@@ -15,8 +15,9 @@ type Props = {
         updated_at: string | null;
         updated_by: string | null;
     };
+    batch_ends_on: string | null;
     remaining_days: number | null;
-    days_configured: boolean;
+    batch_ended: boolean;
     max_phase: number;
 };
 
@@ -34,7 +35,7 @@ function initials(name: string) {
         .join('');
 }
 
-export default function ProgressEdit({ trainee, progress, remaining_days, days_configured, max_phase }: Props) {
+export default function ProgressEdit({ trainee, progress, batch_ends_on, remaining_days, batch_ended, max_phase }: Props) {
     const phases = Array.from({ length: max_phase }, (_, i) => i + 1);
 
     return (
@@ -71,14 +72,12 @@ export default function ProgressEdit({ trainee, progress, remaining_days, days_c
                             <CalendarClock aria-hidden="true" className="size-5" />
                         </span>
                         <div className="mt-4 text-4xl leading-none font-semibold tracking-tight tabular-nums">
-                            {remaining_days ?? '-'}
+                            {batch_ended ? 'Ended' : (remaining_days ?? '-')}
                         </div>
                         <div className="text-muted-foreground mt-2 text-sm">
-                            {remaining_days != null
-                                ? 'Estimated days remaining'
-                                : days_configured
-                                  ? 'Set a start date to estimate days remaining'
-                                  : 'Program length not configured'}
+                            {batch_ends_on
+                                ? `Based on batch end date ${batch_ends_on}`
+                                : 'Set an end date on the trainee’s batch to show days remaining'}
                         </div>
                     </div>
 

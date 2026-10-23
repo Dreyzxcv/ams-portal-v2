@@ -13,13 +13,14 @@ class BatchService
 {
     public function __construct(private readonly AuditLogger $audit) {}
 
-    /** @param array{name: string, starts_on?: ?string} $data */
+    /** @param array{name: string, starts_on?: ?string, ends_on?: ?string} $data */
     public function create(User $actor, array $data): Batch
     {
         return DB::transaction(function () use ($actor, $data) {
             $batch = Batch::create([
                 'name' => $data['name'],
                 'starts_on' => $data['starts_on'] ?? null,
+                'ends_on' => $data['ends_on'] ?? null,
             ]);
 
             $this->audit->record('batch.created', $actor, 'batch', $batch->id, ['name' => $batch->name]);
@@ -28,13 +29,14 @@ class BatchService
         });
     }
 
-    /** @param array{name: string, starts_on?: ?string} $data */
+    /** @param array{name: string, starts_on?: ?string, ends_on?: ?string} $data */
     public function update(User $actor, Batch $batch, array $data): void
     {
         DB::transaction(function () use ($actor, $batch, $data) {
             $batch->fill([
                 'name' => $data['name'],
                 'starts_on' => $data['starts_on'] ?? null,
+                'ends_on' => $data['ends_on'] ?? null,
             ]);
 
             $changed = array_keys($batch->getDirty());
