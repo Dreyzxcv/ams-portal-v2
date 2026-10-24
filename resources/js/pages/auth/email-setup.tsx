@@ -15,13 +15,13 @@ import { formatCountdown, useResendCooldown } from '@/hooks/use-resend-cooldown'
 
 type Props = {
     email: string | null;
-    resend_available_in: number;
+    resend_available_at: number;
     status?: string;
 };
 
-export default function EmailSetup({ email, status, resend_available_in }: Props) {
+export default function EmailSetup({ email, status, resend_available_at }: Props) {
     const [attempt, setAttempt] = useState(0);
-    const cooldown = useResendCooldown(resend_available_in);
+    const cooldown = useResendCooldown(resend_available_at);
 
     return (
         <>

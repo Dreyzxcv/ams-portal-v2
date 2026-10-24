@@ -33,7 +33,9 @@ class EmailSetupController extends Controller
 
         return Inertia::render('auth/email-setup', [
             'email' => $state['email'] ?? null,
-            'resend_available_in' => $otp->cooldownSeconds($user, OtpPurpose::EmailVerification),
+            'resend_available_at' => now()
+                ->addSeconds($otp->cooldownSeconds($user, OtpPurpose::EmailVerification))
+                ->getTimestamp(),
             'status' => $request->session()->get('status'),
         ]);
     }

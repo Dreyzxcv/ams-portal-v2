@@ -14,12 +14,12 @@ import { formatCountdown, useResendCooldown } from '@/hooks/use-resend-cooldown'
 type Props = {
     email: string;
     status?: string;
-    resend_available_in: number;
+    resend_available_at: number;
 };
 
-export default function OtpChallenge({ email, status, resend_available_in }: Props) {
+export default function OtpChallenge({ email, status, resend_available_at }: Props) {
     const [attempt, setAttempt] = useState(0);
-    const cooldown = useResendCooldown(resend_available_in);
+    const cooldown = useResendCooldown(resend_available_at);
 
     return (
         <>
