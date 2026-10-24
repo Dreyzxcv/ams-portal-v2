@@ -88,13 +88,12 @@ services:
     dockerContext: .
     healthCheckPath: /up
     preDeployCommand: php artisan migrate --force
-    envVarGroups:
-      - ams-portal-core
-      - ams-portal-database
-      - ams-portal-reverb
-      - ams-portal-mail
-      - ams-portal-certificates
     envVars:
+      - fromGroup: ams-portal-core
+      - fromGroup: ams-portal-database
+      - fromGroup: ams-portal-reverb
+      - fromGroup: ams-portal-mail
+      - fromGroup: ams-portal-certificates
       - key: APP_URL
         sync: false
       - key: ASSET_URL
@@ -118,9 +117,9 @@ services:
     dockerfilePath: ./Dockerfile
     dockerContext: .
     dockerCommand: php artisan reverb:start --host=0.0.0.0 --port=10000
-    envVarGroups:
-      - ams-portal-core
-      - ams-portal-reverb
+    envVars:
+      - fromGroup: ams-portal-core
+      - fromGroup: ams-portal-reverb
 
   - type: cron
     name: ams-portal-scheduler
@@ -131,6 +130,6 @@ services:
     dockerContext: .
     schedule: "* * * * *"
     dockerCommand: php artisan schedule:run
-    envVarGroups:
-      - ams-portal-core
-      - ams-portal-database
+    envVars:
+      - fromGroup: ams-portal-core
+      - fromGroup: ams-portal-database
