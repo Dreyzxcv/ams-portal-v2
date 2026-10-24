@@ -16,8 +16,6 @@ import { Label } from '@/components/ui/label';
 import { index as chainManage } from '@/routes/chain';
 import type { ChainEntry } from '@/types/chain';
 
-const ACCEPT = 'image/jpeg,image/png,image/webp';
-
 function EntryDialog({ entry }: { entry?: ChainEntry }) {
     const [open, setOpen] = useState(false);
     const form = entry
@@ -106,29 +104,22 @@ function EntryDialog({ entry }: { entry?: ChainEntry }) {
                                 </div>
 
                                 <div className="grid gap-2">
-                                    <Label htmlFor={`image-${entry?.id ?? 'new'}`}>Photo (optional)</Label>
-                                    {entry?.image_url && (
-                                        <img
-                                            src={entry.image_url}
-                                            alt=""
-                                            className="size-16 rounded-xl object-cover"
-                                        />
-                                    )}
+                                    <Label htmlFor={`image-${entry?.id ?? 'new'}`}>Photo link (optional)</Label>
                                     <Input
                                         id={`image-${entry?.id ?? 'new'}`}
-                                        name="image"
-                                        type="file"
-                                        accept={ACCEPT}
-                                        className="rounded-xl text-xs"
+                                        name="image_url"
+                                        type="url"
+                                        inputMode="url"
+                                        placeholder="https://i.imgur.com/abc123.jpg"
+                                        defaultValue={entry?.image_url ?? ''}
+                                        maxLength={500}
+                                        className="rounded-xl"
                                     />
-                                    <p className="text-muted-foreground text-xs">JPG, PNG or WebP, up to 2 MB.</p>
-                                    {entry?.image_url && (
-                                        <label className="flex items-center gap-2 text-sm">
-                                            <input type="checkbox" name="remove_image" value="1" />
-                                            Remove current photo
-                                        </label>
-                                    )}
-                                    <InputError message={errors.image} />
+                                    <p className="text-muted-foreground text-xs">
+                                        Direct link only (ends in .jpg, .png or .webp). Imgur page links like
+                                        imgur.com/abc123 will not work. Leave blank for no photo.
+                                    </p>
+                                    <InputError message={errors.image_url} />
                                 </div>
 
                                 <div className="flex justify-end gap-2 pt-1">

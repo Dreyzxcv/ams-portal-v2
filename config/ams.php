@@ -25,4 +25,8 @@ return [
             'closed' => 'Recruitment is now closed. A batch is currently ongoing.',
         ],
     ],
+    'chain' => [
+        // Exact hostnames allowed for portrait URLs.
+        'image_hosts' => ['i.imgur.com', 'i.ibb.co'],
+    ],
 ];

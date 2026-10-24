@@ -8,9 +8,7 @@ use App\Models\ChainOfCommandEntry;
 use App\Services\ChainOfCommandService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Gate;
-use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -37,11 +35,7 @@ class ChainOfCommandController extends Controller
 
     public function store(ChainOfCommandEntryRequest $request): RedirectResponse
     {
-        $this->chain->create(
-            $request->user(),
-            Arr::only($request->validated(), ['name', 'rank', 'position', 'note', 'sort_order']),
-            $request->file('image'),
-        );
+        $this->chain->create($request->user(), $request->validated());
 
         Inertia::flash('toast', ['type' => 'success', 'message' => __('Entry added.')]);
 
@@ -50,13 +44,7 @@ class ChainOfCommandController extends Controller
 
     public function update(ChainOfCommandEntryRequest $request, ChainOfCommandEntry $entry): RedirectResponse
     {
-        $this->chain->update(
-            $request->user(),
-            $entry,
-            Arr::only($request->validated(), ['name', 'rank', 'position', 'note', 'sort_order']),
-            $request->file('image'),
-            $request->boolean('remove_image'),
-        );
+        $this->chain->update($request->user(), $entry, $request->validated());
 
         Inertia::flash('toast', ['type' => 'success', 'message' => __('Entry updated.')]);
 
@@ -90,9 +78,7 @@ class ChainOfCommandController extends Controller
             'position' => $e->position,
             'note' => $e->note,
             'sort_order' => $e->sort_order,
-            'image_url' => $e->image_path
-                ? Storage::disk(ChainOfCommandService::DISK)->url($e->image_path)
-                : null,
+            'image_url' => $e->image_url,
         ];
     }
 }

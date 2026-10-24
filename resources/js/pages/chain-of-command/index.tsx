@@ -56,6 +56,8 @@ export default function ChainOfCommand({ entries }: { entries: ChainEntry[] }) {
                                         <img
                                             src={e.image_url}
                                             alt={`${e.rank} ${e.name}`}
+                                            referrerPolicy="no-referrer"
+                                            loading="lazy"
                                             className="size-24 rounded-2xl object-cover"
                                         />
                                     ) : (
