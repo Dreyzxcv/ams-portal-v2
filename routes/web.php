@@ -11,6 +11,7 @@ Route::middleware(['auth'])->group(function () {
 });
 
 require __DIR__.'/announcements.php';
+require __DIR__.'/chain.php';
 require __DIR__.'/intake.php';
 require __DIR__.'/settings.php';
 require __DIR__.'/users.php';

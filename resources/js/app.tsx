@@ -25,6 +25,7 @@ void createInertiaApp({
         switch (true) {
             case name === 'welcome':
             case name === 'announcements/archive':
+            case name === 'chain-of-command/index':
             case name === 'quizzes/attempt':
                 return null;
             case name.startsWith('auth/'):

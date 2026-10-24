@@ -34,6 +34,7 @@ import type { IntakeBanner } from '@/types/intake';
 import AnnouncementCard from '@/components/announcement-card';
 import type { PublicAnnouncement } from '@/types/announcement';
 import { archive } from '@/routes/announcements';
+import { index as chainIndex } from '@/routes/chain';
 import ThemeToggle from '@/components/theme-toggle';
 
 // Hero image. Swap the file at resources/images/landing-page-1.png anytime.
@@ -245,6 +246,12 @@ export default function Welcome({
                                     {l.label}
                                 </a>
                             ))}
+                            <Link
+                                href={chainIndex()}
+                                className="text-muted-foreground hover:bg-muted hover:text-foreground rounded-xl px-3.5 py-2 text-sm font-medium transition-colors"
+                            >
+                                Chain of Command
+                            </Link>
                             <a
                                 href={DISCORD}
                                 target="_blank"
@@ -289,6 +296,13 @@ export default function Welcome({
                                     {l.label}
                                 </a>
                             ))}
+                            <Link
+                                href={chainIndex()}
+                                onClick={() => setMenuOpen(false)}
+                                className="text-muted-foreground hover:bg-muted hover:text-foreground rounded-xl px-3 py-2.5 text-sm font-medium"
+                            >
+                                Chain of Command
+                            </Link>
                             <Button
                                 asChild
                                 className="mt-2 rounded-xl bg-sky-600 text-white hover:bg-sky-700"
@@ -624,6 +638,14 @@ export default function Welcome({
                                             </a>
                                         </li>
                                     ))}
+                                    <li>
+                                        <Link
+                                            href={chainIndex()}
+                                            className="hover:text-foreground transition-colors"
+                                        >
+                                            Chain of Command
+                                        </Link>
+                                    </li>
                                     <li>
                                         <Link
                                             href={portalHref}

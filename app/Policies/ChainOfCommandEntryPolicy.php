@@ -8,6 +8,11 @@ use App\Support\Permissions;
 
 class ChainOfCommandEntryPolicy
 {
+    public function viewAny(User $user): bool
+    {
+        return Permissions::allows($user, Permissions::CHAIN_MANAGE);
+    }
+
     public function create(User $user): bool
     {
         return Permissions::allows($user, Permissions::CHAIN_MANAGE);
