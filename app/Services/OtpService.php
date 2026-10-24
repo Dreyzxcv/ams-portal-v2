@@ -55,7 +55,7 @@ class OtpService
                 ]);
 
                 // If sending fails, the exception rolls the challenge back too.
-                Mail::to($destination)->send(new LoginOtpMail($code, $minutes));
+                Mail::to($destination)->send(new LoginOtpMail($code, $minutes, $purpose));
             });
         } catch (Throwable $e) {
             report($e);
