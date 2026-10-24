@@ -1,0 +1,136 @@
+envVarGroups:
+  - name: ams-portal-core
+    envVars:
+      - key: APP_ENV
+        value: production
+      - key: APP_NAME
+        value: AMS Portal
+      - key: APP_DEBUG
+        value: "false"
+      - key: APP_KEY
+        sync: false
+
+  - name: ams-portal-database
+    envVars:
+      - key: DB_CONNECTION
+        value: pgsql
+      - key: DB_URL
+        sync: false
+      - key: SESSION_DRIVER
+        value: database
+      - key: CACHE_STORE
+        value: database
+      - key: QUEUE_CONNECTION
+        value: database
+
+  - name: ams-portal-reverb
+    envVars:
+      - key: REVERB_APP_ID
+        value: ams-portal
+      - key: REVERB_APP_KEY
+        value: ams-portal-live
+      - key: REVERB_APP_SECRET
+        sync: false
+      - key: VITE_REVERB_APP_KEY
+        value: ams-portal-live
+      - key: REVERB_PORT
+        value: "443"
+      - key: REVERB_SCHEME
+        value: https
+      - key: REVERB_SERVER_HOST
+        value: 0.0.0.0
+      - key: REVERB_SERVER_PORT
+        value: "10000"
+      - key: VITE_REVERB_PORT
+        value: "443"
+      - key: VITE_REVERB_SCHEME
+        value: https
+
+  - name: ams-portal-mail
+    envVars:
+      - key: MAIL_MAILER
+        value: smtp
+      - key: MAIL_HOST
+        value: smtp-relay.brevo.com
+      - key: MAIL_PORT
+        value: "587"
+      - key: MAIL_SCHEME
+        value: smtp
+      - key: MAIL_USERNAME
+        sync: false
+      - key: MAIL_PASSWORD
+        sync: false
+      - key: MAIL_FROM_ADDRESS
+        sync: false
+      - key: MAIL_FROM_NAME
+        value: AMS Portal
+
+  - name: ams-portal-certificates
+    envVars:
+      - key: CERTIFICATE_DISK
+        value: google
+      - key: GOOGLE_DRIVE_CLIENT_ID
+        sync: false
+      - key: GOOGLE_DRIVE_CLIENT_SECRET
+        sync: false
+      - key: GOOGLE_DRIVE_REFRESH_TOKEN
+        sync: false
+      - key: GOOGLE_DRIVE_CERTIFICATES_FOLDER_ID
+        sync: false
+
+services:
+  - type: web
+    name: ams-portal
+    runtime: docker
+    plan: starter
+    region: singapore
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    healthCheckPath: /up
+    preDeployCommand: php artisan migrate --force
+    envVarGroups:
+      - ams-portal-core
+      - ams-portal-database
+      - ams-portal-reverb
+      - ams-portal-mail
+      - ams-portal-certificates
+    envVars:
+      - key: APP_URL
+        sync: false
+      - key: ASSET_URL
+        sync: false
+      - key: REVERB_HOST
+        fromService:
+          type: web
+          name: ams-portal-reverb
+          property: host
+      - key: VITE_REVERB_HOST
+        fromService:
+          type: web
+          name: ams-portal-reverb
+          property: host
+
+  - type: web
+    name: ams-portal-reverb
+    runtime: docker
+    plan: starter
+    region: singapore
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    dockerCommand: php artisan reverb:start --host=0.0.0.0 --port=10000
+    envVarGroups:
+      - ams-portal-core
+      - ams-portal-reverb
+
+  - type: cron
+    name: ams-portal-scheduler
+    runtime: docker
+    plan: starter
+    region: singapore
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    schedule: "* * * * *"
+    dockerCommand: php artisan schedule:run
+    envVarGroups:
+      - ams-portal-core
+      - ams-portal-database
