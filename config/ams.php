@@ -27,6 +27,6 @@ return [
     ],
     'chain' => [
         // Exact hostnames allowed for portrait URLs.
-        'image_hosts' => ['i.imgur.com', 'i.ibb.co'],
+        'image_hosts' => ['i.imgur.com', 'i.ibb.co', 'www.image2url.com'],
     ],
 ];

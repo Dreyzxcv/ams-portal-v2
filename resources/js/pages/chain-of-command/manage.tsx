@@ -110,14 +110,14 @@ function EntryDialog({ entry }: { entry?: ChainEntry }) {
                                         name="image_url"
                                         type="url"
                                         inputMode="url"
-                                        placeholder="https://i.imgur.com/abc123.jpg"
+                                        placeholder="https://www.image2url.com/r2/default/images/example.png"
                                         defaultValue={entry?.image_url ?? ''}
                                         maxLength={500}
                                         className="rounded-xl"
                                     />
                                     <p className="text-muted-foreground text-xs">
-                                        Direct link only (ends in .jpg, .png or .webp). Imgur page links like
-                                        imgur.com/abc123 will not work. Leave blank for no photo.
+                                        Direct image link only (ends in .jpg, .png or .webp). Page links will not
+                                        work. Leave blank for no photo.
                                     </p>
                                     <InputError message={errors.image_url} />
                                 </div>
